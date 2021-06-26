@@ -10,12 +10,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "vuepress": "^1.8.2"
+    "vuepress": "^1.8.2",
+    "vuepress-theme-reco": "^1.6.6"
   },
   "dependencies": {
     "async-validator": "^1.11.5",
     "element-ui": "^2.15.2",
     "vue": "^2.6.14",
-    "vue-server-renderer": "^2.6.14"
+    "vue-server-renderer": "^2.6.14",
+    "vuepress-theme-hope": "^1.18.4"
   }
 }
