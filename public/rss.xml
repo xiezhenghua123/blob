@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <atom:link href=" https://mister-hope.github.io/rss.xml" rel="self" type="application/rss+xml"/>
+    <title>前端坎坷之路</title>
+    <link> https://mister-hope.github.io/</link>
+    <description>日常学习总结，没事儿多来逛逛</description>
+    <language>zh-CN</language>
+    <pubDate>Sat, 26 Jun 2021 08:13:40 GMT</pubDate>
+    <lastBuildDate>Sat, 26 Jun 2021 08:13:40 GMT</lastBuildDate>
+    <generator>@mr-hope/vuepress-plugin-feed</generator>
+    <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+  </channel>
+</rss>
