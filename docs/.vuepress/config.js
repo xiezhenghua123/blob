@@ -43,17 +43,20 @@ module.exports = config({
             content: 'Copyright 2021 zhenghuaxie All rights Reserved.'
         },
         nav: [
-            { text: "vuepress", link: "/article/vuepress/firstStudy", icon: "creative" },
+            { text: "首页", link: "/", icon: "creative" },
+            { text: "vuepress", link: "/article/vuepress/", icon: "creative" }
         ],
-
+        sidebar: {
+            '/article/vuepress/': ['', 'firstStudy']
+        },
         darkmode: 'auto-switch',
         hostname: 'https://xiezhenghua123.github.io',
         blog: {
             avatar: '/logo.jpg',
             name: '菜鸡小谢',
             links: {
-                'QQ': 1803493121,
-                'Wechat': 'XZH_ddl',
+                'QQ': 'tencent://message/?uin=1803493121',
+                'Wechat': '/blob/article/links/weChat/',
                 'Github': 'https://github.com/xiezhenghua123'
             }
         }
@@ -61,4 +64,5 @@ module.exports = config({
     markdown: {
         lineNumbers: true
     }
+
 })
