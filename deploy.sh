@@ -12,7 +12,6 @@ cd public
 # echo 'www.example.com' > CNAME
 
 git init
-git checkout -b public
 git add *
 git commit -m '发布'
 
@@ -20,6 +19,6 @@ git commit -m '发布'
 # git push -f git@github.com:<USERNAME>/<USERNAME>.github.io.git master
 
 # 如果发布到 https://<USERNAME>.github.io/<REPO>
-git push -f git@github.com:xiezhenghua123/blob.git public
+git push -f git@github.com:xiezhenghua123/blob.git master
 
 cd -
