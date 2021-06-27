@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="zh-CN">
-  <id> https://github.com/xiezhenghua123/blob/public/./</id>
+  <id>https://xiezhenghua123.github.io/public/</id>
   <title>前端坎坷之路</title>
   <subtitle>日常学习总结，没事儿多来逛逛</subtitle>
-  <updated>2021-06-26T09:52:17.368Z</updated>
+  <updated>2021-06-27T02:15:13.561Z</updated>
   <generator>@mr-hope/vuepress-plugin-feed</generator>
-  <link rel="self" href=" https://github.com/xiezhenghua123/blob/public/./atom.xml"/>
-  <link rel="alternate" href=" https://github.com/xiezhenghua123/blob/public/./"/>
+  <link rel="self" href="https://xiezhenghua123.github.io/public/atom.xml"/>
+  <link rel="alternate" href="https://xiezhenghua123.github.io/public/"/>
 </feed>

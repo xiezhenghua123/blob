@@ -1,6 +1,6 @@
 const { config } = require("vuepress-theme-hope");
 module.exports = config({
-    base: 'blob',
+    base: '/public/',
     title: "前端坎坷之路", //这里是博客标题
     description: '日常学习总结，没事儿多来逛逛', //博客描述
     dest: 'public', //博客部署时输出的文件夹
@@ -15,8 +15,14 @@ module.exports = config({
         },
     },
     themeConfig: {
+        nav: [
+            { text: "指南", link: "/zh/guide/", icon: "creative" },
+            { text: "配置", link: "/zh/config/", icon: "config" },
+            { text: "常见问题", link: "/zh/FAQ/", icon: "question" },
+        ],
+
         darkmode: 'auto-switch',
-        hostname: ' https://github.com/xiezhenghua123',
+        hostname: 'https://xiezhenghua123.github.io',
         blog: {
             avatar: '/logo.jpg',
             name: '菜鸡小谢',

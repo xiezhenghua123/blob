@@ -1,1 +1,1 @@
-{"name":"前端坎坷之路","short_name":"前端坎坷之路","description":"日常学习总结，没事儿多来逛逛","lang":"zh-CN","start_url":"./","scope":"./","display":"standalone","theme_color":"#46bd87","background_color":"#ffffff","orientation":"portrait-primary","prefer_related_applications":false}
+{"name":"前端坎坷之路","short_name":"前端坎坷之路","description":"日常学习总结，没事儿多来逛逛","lang":"zh-CN","start_url":"/public/","scope":"/public/","display":"standalone","theme_color":"#46bd87","background_color":"#ffffff","orientation":"portrait-primary","prefer_related_applications":false}

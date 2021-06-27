@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <atom:link href=" https://github.com/xiezhenghua123/blob/public/./rss.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="https://xiezhenghua123.github.io/public/rss.xml" rel="self" type="application/rss+xml"/>
     <title>前端坎坷之路</title>
-    <link> https://github.com/xiezhenghua123/blob/public/./</link>
+    <link>https://xiezhenghua123.github.io/public/</link>
     <description>日常学习总结，没事儿多来逛逛</description>
     <language>zh-CN</language>
-    <pubDate>Sat, 26 Jun 2021 09:52:17 GMT</pubDate>
-    <lastBuildDate>Sat, 26 Jun 2021 09:52:17 GMT</lastBuildDate>
+    <pubDate>Sun, 27 Jun 2021 02:15:13 GMT</pubDate>
+    <lastBuildDate>Sun, 27 Jun 2021 02:15:13 GMT</lastBuildDate>
     <generator>@mr-hope/vuepress-plugin-feed</generator>
     <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
   </channel>

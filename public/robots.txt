@@ -2,4 +2,4 @@
 User-agent:*
 Disallow:
 
-Sitemap:  https://github.com/xiezhenghua123/blob/public./sitemap.xml
+Sitemap: https://xiezhenghua123.github.io/public/sitemap.xml

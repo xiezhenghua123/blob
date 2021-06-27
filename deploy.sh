@@ -12,13 +12,14 @@ cd public
 # echo 'www.example.com' > CNAME
 
 git init
-git add -A
-git commit -m 'deploy'
+git checkout -b public
+git add *
+git commit -m '发布'
 
 # 如果发布到 https://<USERNAME>.github.io
 # git push -f git@github.com:<USERNAME>/<USERNAME>.github.io.git master
 
 # 如果发布到 https://<USERNAME>.github.io/<REPO>
-git push -f git@github.com:xiezhenghua123/blob.git public:gh-pages
+git push -f git@github.com:xiezhenghua123/blob.git public
 
 cd -
