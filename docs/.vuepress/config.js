@@ -6,7 +6,23 @@ module.exports = config({
     dest: 'public', //博客部署时输出的文件夹
     head: [
         ['link', {}], //favicon图标设置
-        ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1,user-scalable=no' }]
+        ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1,user-scalable=no' }],
+        [
+            "script",
+            { src: "https://cdn.jsdelivr.net/npm/react/umd/react.production.min.js" },
+        ],
+        [
+            "script",
+            {
+                src: "https://cdn.jsdelivr.net/npm/react-dom/umd/react-dom.production.min.js",
+            },
+        ],
+        [
+            "script",
+            { src: "https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" },
+        ],
+        // vue 只需要 vue 库
+        ["script", { src: "https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js" }],
     ],
     theme: 'hope', //vuepress挂载的主题
     locales: {
@@ -15,12 +31,19 @@ module.exports = config({
         },
     },
     themeConfig: {
+        pwa: {
+            cachePic: true,
+            maxPicSize: '2048KB'
+        },
+        mdEnhance: {
+            demo: true,
+        },
         footer: {
             display: true,
             content: 'Copyright 2021 zhenghuaxie All rights Reserved.'
         },
         nav: [
-            { text: "指南", link: "/article/array/", icon: "creative" },
+            { text: "vuepress", link: "/article/vuepress/firstStudy", icon: "creative" },
         ],
 
         darkmode: 'auto-switch',
@@ -30,7 +53,8 @@ module.exports = config({
             name: '菜鸡小谢',
             links: {
                 'QQ': 1803493121,
-                'Wechat': 'XZH_ddl'
+                'Wechat': 'XZH_ddl',
+                'Github': 'https://github.com/xiezhenghua123'
             }
         }
     },
