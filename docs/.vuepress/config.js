@@ -31,6 +31,11 @@ module.exports = config({
         },
     },
     themeConfig: {
+        comment: {
+            type: "valine",
+            appId: "HIaPJPc3R71AsvedYUYBzlH7-MdYXbMMI", // your appId
+            appKey: "G14KGntWvLFpQVqPvydRR1UM", // your appKey
+        },
         pwa: {
             cachePic: true,
             maxPicSize: '2048KB'
