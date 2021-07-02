@@ -33,8 +33,8 @@ module.exports = config({
         },
         nav: [
             { text: "首页", link: "/", icon: "home" },
-            { text: "vuepress", link: "/article/vuepress/", icon: "Vue" },
-            { text: 'js高级程序设计', link: '/article/javascript/', icon: 'js' }
+            { text: "vuepress", link: "/article/vuepress/firstStudy.md", icon: "Vue" },
+            { text: 'js高级程序设计', link: '/article/javascript/Array.md', icon: 'js' }
         ],
         sidebar: {
             '/article/vuepress/': ['firstStudy'],
