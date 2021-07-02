@@ -7,22 +7,6 @@ module.exports = config({
     head: [
         ['link', {}], //favicon图标设置
         ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1,user-scalable=no' }],
-        [
-            "script",
-            { src: "https://cdn.jsdelivr.net/npm/react/umd/react.production.min.js" },
-        ],
-        [
-            "script",
-            {
-                src: "https://cdn.jsdelivr.net/npm/react-dom/umd/react-dom.production.min.js",
-            },
-        ],
-        [
-            "script",
-            { src: "https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" },
-        ],
-        // vue 只需要 vue 库
-        ["script", { src: "https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js" }],
     ],
     theme: 'hope', //vuepress挂载的主题
     locales: {
@@ -48,11 +32,13 @@ module.exports = config({
             content: 'Copyright 2021 zhenghuaxie All rights Reserved.'
         },
         nav: [
-            { text: "首页", link: "/", icon: "creative" },
-            { text: "vuepress", link: "/article/vuepress/", icon: "creative" }
+            { text: "首页", link: "/", icon: "home" },
+            { text: "vuepress", link: "/article/vuepress/", icon: "Vue" },
+            { text: 'js高级程序设计', link: '/article/javascript/', icon: 'js' }
         ],
         sidebar: {
-            '/article/vuepress/': ['', 'firstStudy']
+            '/article/vuepress/': ['firstStudy'],
+            '/article/javascript/': ['Array']
         },
         darkmode: 'auto-switch',
         hostname: 'https://xiezhenghua123.github.io',
