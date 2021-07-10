@@ -15,11 +15,14 @@ meta:
 ```js
 //使用构造函数创建
 let array = new Array();
+
 //使用数组自变量创建
 let array = [];
+
 //使用form函数创建,可将类数组转换为数组
 let array = Array.from('array')
 console.log(array) //['a','r','r','a','y']
+
 //使用of函数创建，可将一组参数转换为实例
 let array = Array.of(1,2,3,4)
 ```
@@ -49,6 +52,7 @@ console.log(length) //3
 //利用instanceof，局限性：只有一个全局上下文时才能使用
 let array = []
 console.log(array instanceof Array) //true
+
 //利用isArray方法
 console.log(Array.isArray(array)) //true
 ```
@@ -59,10 +63,13 @@ console.log(Array.isArray(array)) //true
 
 ```javascript
 let array = ['a','b','c']
+
 //keys方法返回数组索引的迭代器
 console.log(array.keys()) //[0,1,2]
+
 //values方法返回数组元素的迭代器
 console.log(array.values())//['a','b','c']
+
 //entries方法方法返回键值对
 console.log(array.entries())//[[0,'a'],[1,'b'],[2,'c']]
 ```
@@ -79,11 +86,12 @@ fill()和copyWithin()方法用于填充数组，都不会改变原数组的大�
 同：①都会静默忽略超出数组边界、零长度以及方向相反的索引范围，意思就是这些情况的索引范围不会执行
 
 ```javascript
+let array = [0,1,2,3,4,5]
+
 //fill()
-let array = [0,1,2,3,4,5]
 console.log(array.fill(9,2,4)) //[0,1,9,9,4,5]
+
 //copyWithin()
-let array = [0,1,2,3,4,5]
 console.log(array.copyWithin(2,0,3)) //[0,1,0,1,2,5]
 
 ```
@@ -141,6 +149,7 @@ let array = [3,5,9,6,2]
 console.log(array.sort((a,b)=>{
 	return a-b
 }))  //[2,3,5,6,9] 升序排序
+
 console.log(array.sort((a,b)=>{
     return b-a
 })) //[9,6,5,3,2] 降序排序
@@ -156,9 +165,11 @@ console.log(array.sort((a,b)=>{
 //普通连接
 let array1 = ['a','b','c']
 console.log(array1.concat('d','e')) //[ 'a', 'b', 'c', 'd', 'e' ]
+
 //嵌套数组连接
 let array2 = ['d','e']
 console.log(array1.concat(array2)) //[ 'a', 'b', 'c', 'd', 'e' ]
+
 //重写打平数组参数的行为
 array2[Symbol.isConcatSpreadable] = false
 console.log(array1.concat(array2)) 
@@ -212,12 +223,15 @@ console.log(array)//['a','g','h','c','d']
 
 ```javascript
 let array = ['a','b','c','d']
+
 //indexOf(value,start)方法，从数组第一项开始匹配，找到元素就返回索引，找不到就返回-1
 console.log(array.indexOf('b'))//1
 console.log(array.indexOf('h'))//-1
+
 //lastIndexOf(value,start)方法，从数组末尾第一项开始匹配，找到元素就返回索引，找不到就返回-1
 console.log(array.indexOf('b'))//1
 console.log(array.indexOf('h'))//-1
+
 //includes(value,start),从数组第一项开始匹配，找到元素返回true，找不到返回false
 console.log(array.includes('m')) //false
 ```
@@ -237,8 +251,10 @@ const people = [
         age:29
     }
 ]
+
 //find(),返回第一个匹配的元素
 console.log(people.find((e,index,array) => e.age < 28))//{ name: 'mmm', age: 27 }
+
 //findIndex()，返回第一个匹配的元素
 console.log(people.find((e,index,array) => e.age < 28))//0
 ```
@@ -298,3 +314,6 @@ console.log(array.reduce((pre,cur,index,array)=> {
 },10)) //运行过程：10+5+4+3+2+1 最终结果：25
 ```
 
+
+
+第一次写博客文章，写的不好，大家见谅！
