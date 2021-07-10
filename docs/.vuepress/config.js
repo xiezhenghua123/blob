@@ -1,3 +1,4 @@
+// let path = require('path')
 const { config } = require("vuepress-theme-hope");
 module.exports = config({
     base: '/blob/',
@@ -8,7 +9,8 @@ module.exports = config({
         ['link', {}], //favicon图标设置
         ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1,user-scalable=no' }],
     ],
-    theme: 'hope', //vuepress挂载的主题
+    // theme: path.resolve(__dirname, './theme'), //vuepress挂载的主题
+    // theme: 'vuepress-theme-hope',
     locales: {
         '/': {
             lang: 'zh-CN',
