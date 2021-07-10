@@ -10,7 +10,7 @@ module.exports = config({
         ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1,user-scalable=no' }],
     ],
     // theme: path.resolve(__dirname, './theme'), //vuepress挂载的主题
-    // theme: 'vuepress-theme-hope',
+    theme: 'vuepress-theme-hope',
     locales: {
         '/': {
             lang: 'zh-CN',
