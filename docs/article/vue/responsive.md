@@ -6,11 +6,11 @@ title: vue响应式原理
 original: true
 ---
 
-### 前言
+### **前言**
 
 看了好久的vue响应式原理，一直没看懂，直到我最近看到了实习公司的一位同事写的一篇分享文章，然后结合vue技术揭秘，终于对它有一点点的感悟了。
 
-### 核心
+### **核心**
 
 Vue响应式的核心是利用Object.defineProperty()这个方法进行数据劫持和观察者模式进行数据响应式的。Object.defineProperty()这个方法会直接在一个对象上定义一个新属性，或者修改一个对象的现有属性，并返回此对象。具体用法如下：
 
@@ -32,7 +32,7 @@ person.name  //获取到name了
 person.name = '小谢'  //设置了name为小谢
 ```
 
-### 观察者模式
+### **观察者模式**
 
 什么是观察者模式？它分为**注册环节跟发布环节**。
 
@@ -67,7 +67,7 @@ wantCake.notify()
 
 
 
-### 初始化
+### **初始化**
 
 vue在初始化执行initState的时候，会对`props`、`methods`、`data`、`computed` 和 `wathcer` 等属性做初始化操作。
 
@@ -198,7 +198,7 @@ function defineReactive(obj: Object, key: string, ...) {
 
 上述代码中的Dep类就是一个观察者类，每个对象属性都一个dep实例对象，在执行get的时候进行触发depend方法，触发sit的时候执行notify方法。
 
-### mount阶段
+### **mount阶段**
 
 在vue实例挂载阶段，会创建一个Watcher类的实例对象，这个Watcher实际上是连接Vue组件与Dep（也就是视图更新环节）的桥梁。
 
@@ -232,13 +232,13 @@ class Watcher {
 
 在rende()方法将模板渲染成虚拟Vnode的过程中会访问data，从而触发属性的getter，然后每个对象属性又有一个dep实例对象（上面提到的），然后再getter的逻辑中又会调用该dep的depend方法，将watcher实例add到sub（存在Dep类中的存储watcher的数组）里面。在depend方法里面，Dep.target就是watcher本身，在Wacher类中的构造函数会执行（上面代码有）。以上过程就叫**依赖收集**。
 
-### 派发更新
+### **派发更新**
 
 在对象属性的数据改变之后，会触发sitter，从而执行sitter函数的逻辑，从而调用dep实例的notify方法，从而进行遍历调用sub中所有watcher的upadte方法进行视图更新。
 
 ![image-20210717221736565](../../.vuepress/public/screenshot/image-20210717221736565.png)
 
-### 总结
+### **总结**
 
 **第一步：**组件初始化的时候，先给每一个Data属性都注册getter，setter，也就是reactive化。然后再new 一个自己的Watcher对象，此时watcher会立即调用组件的render函数去生成虚拟DOM。在调用render的时候，就会需要用到data的属性值，此时会触发getter函数，将当前的Watcher函数注册进sub里。
 
