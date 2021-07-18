@@ -34,7 +34,7 @@ npm install #最好npm install一下，防止包丢失
 
 2、在 docs 文件夹下面新建 readme.md 文件（这是作为首页）
 
-首页配置参照：https://vuepress-theme-hope.github.io/zh/guide/layout/home/#home
+[首页配置参照](https://vuepress-theme-hope.github.io/zh/guide/layout/home/#home)
 
 #### vuepress-theme-hope 主题配置
 
@@ -64,7 +64,7 @@ module.exports = config({
 
 我是部署到github上的，由于我不是第一次部署，所以仓库名已经被占用了，我用的是另一个仓库
 
-具体看官网文档：https://vuepress.vuejs.org/zh/guide/deploy.html#github-pages
+[具体看官网文档](https://vuepress.vuejs.org/zh/guide/deploy.html#github-pages)
 
 但我想在我的github博客仓库中设立两个分支，一个分支存放我博客的所有内容，一个分支存放打包后的页面
 
