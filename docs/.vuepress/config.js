@@ -58,12 +58,18 @@ module.exports = config({
         link: "/article/interview/url.md",
         icon: "interview",
       },
+      {
+        text: "日常开发踩坑",
+        link: "/article/trap/el-menu.md",
+        icon: "goumaixianjing",
+      },
     ],
     sidebar: {
       "/article/vuepress/": ["firstStudy"],
       "/article/javascript/": ["Array"],
       "/article/vue/": ["responsive"],
       "/article/interview/": ["url"],
+      "/article/trap/": ["el-menu"],
     },
     darkmode: "auto-switch",
     hostname: "https://xiezhenghua123.github.io",

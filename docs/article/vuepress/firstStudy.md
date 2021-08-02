@@ -4,7 +4,6 @@ time: 2021/6/27
 category: vuepress
 title: vuepress 搭配 vuepress-theme-hope 主题搭建个人博客经历
 original: true
-sidebar: 'auto'
 ---
 
 #### 初始化 vuepress
