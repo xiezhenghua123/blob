@@ -248,6 +248,8 @@ class Watcher {
 
 ![image-20210717225239671](../../.vuepress/public/screenshot/image-20210717225239671.png)
 
+**注意：vue对数组响应式是通过变异方法完成的，而且如果要对响应式对象添加新的属性，必须要用$set方法才能完成**
+
 参考文章：
 
 [vue技术揭秘](https://ustbhuangyi.github.io/vue-analysis/v2/reactive/)
