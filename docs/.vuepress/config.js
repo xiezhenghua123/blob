@@ -68,7 +68,7 @@ module.exports = config({
       "/article/vuepress/": ["firstStudy"],
       "/article/javascript/": ["Array"],
       "/article/vue/": ["responsive"],
-      "/article/interview/": ["url"],
+      "/article/interview/": ["url", "checkSelf"],
       "/article/trap/": ["el-menu"],
     },
     darkmode: "auto-switch",
