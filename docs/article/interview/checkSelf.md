@@ -10,7 +10,7 @@ original: true
 
 > 前端工程师吃饭的家伙，深度、广度一样都不能差。
 
-### 变量和类型
+### **变量和类型**
 
 - **1.`JavaScript`规定了几种语言类型**
 
@@ -116,7 +116,7 @@ original: true
 
 装箱：将基本数据类型转换为引用数据类型，分为隐式装箱和显示装箱
 
-​ 隐式：每当读取一个基本类型的值时，后台会创建一个该基本类型所对应的对象。在这个基本类型上调用方法，其实是在这个基本类型对象上调用方法。这个基本类型的对象是临时的，它只存在于方法调用那一行代码执行的瞬间，执行方法后立刻被销毁。
+ 隐式：每当读取一个基本类型的值时，后台会创建一个该基本类型所对应的对象。在这个基本类型上调用方法，其实是在这个基本类型对象上调用方法。这个基本类型的对象是临时的，它只存在于方法调用那一行代码执行的瞬间，执行方法后立刻被销毁。
 
 ```javascript
 num.toFixed(2); // '123.00'
@@ -126,7 +126,7 @@ c.toFixed(2);
 c = null;
 ```
 
-​ 显式：直接 new 一个内置对象
+ 显式：直接 new 一个内置对象
 
 ```javascript
 let a = new String("jkj");
@@ -139,25 +139,25 @@ let a = new String("jkj");
 
 (1)null 表示"没有对象"，即该处不应该有值
 
-​ 用法：① 作为函数的参数，表示该函数的参数不是对象。
+ 用法：① 作为函数的参数，表示该函数的参数不是对象。
 
-​ ② 作为对象原型链的终点。
+ ② 作为对象原型链的终点。
 
 (2)undefined 表示"缺少值"，就是此处应该有一个值，但是还没有定义
 
 用法：① 变量被声明了，但没有赋值时，就等于 undefined。
 
-​ ② 调用函数时，应该提供的参数没有提供，该参数等于 undefined。
+ ② 调用函数时，应该提供的参数没有提供，该参数等于 undefined。
 
-​ ③ 对象没有赋值的属性，该属性的值为 undefined。
+ ③ 对象没有赋值的属性，该属性的值为 undefined。
 
-​ ④ 函数没有返回值时，默认返回 undefined。
+ ④ 函数没有返回值时，默认返回 undefined。
 
 - **8.至少可以说出三种判断`JavaScript`数据类型的方式，以及他们的优缺点，如何准确的判断数组类型**
 
 （1）instanceOf:主要用于检测引用类型，检测某个实例是否属于某个对象
 
-​ 缺点：不能检测基本数据类型
+ 缺点：不能检测基本数据类型
 
 ```javascript
 console.log([] instanceof Array); //true
@@ -166,7 +166,7 @@ console.log(123 instanceof Number); //false
 
 （2）typeOf():用于检测基本数据类型
 
-​ 缺点：无法检测引用数据类型
+ 缺点：无法检测引用数据类型
 
 ```javascript
 console.log(typeof 123); //number
@@ -175,7 +175,7 @@ console.log(typeof []); //Object
 
 （3）Object.prototype.toString.call():可以检测任何数据类型
 
-​ 原理：toString()方法在大部分继承 Object 对象上的都存在，只不过已经被改写了,Object 对象上的 toString 方法返回[Object type]，再通过 call 方法改变 this 指向，即可返回被检测数据的类型
+ 原理：toString()方法在大部分继承 Object 对象上的都存在，只不过已经被改写了,Object 对象上的 toString 方法返回[Object type]，再通过 call 方法改变 this 指向，即可返回被检测数据的类型
 
 ```javascript
 console.log(Object.prototype.toString); //[object Object]
@@ -197,10 +197,12 @@ console.log(Object.prototype.toString.call(a)); //[object Array]
 
 （2）运算符
 
-​ 在非 Numeber 类型进行数学运算符 - \* / 时，会先将非 Number 转换成 Number 类型。
+ 在非 Numeber 类型进行数学运算符 - \* / 时，会先将非 Number 转换成 Number 类型。
 
-​ `+` 运算符要考虑字符串的情况，在操作数中存在字符串时，优先转换成字符串，
+ `+` 运算符要考虑字符串的情况，在操作数中存在字符串时，优先转换成字符串，
 ​ `+` 运算符其中一个操作数是字符串的话，会进行连接字符串的操作。
+
+`+` 运算符其中一个操作数是对象类型的话，会调用对象类型的toString方法进行转换。
 
 ```javascript
 console.log(1 + null, 1 + "12", 1 + undefined, 1 + ["12"], 1 + { a: 1 }); //1 112 NaN 112 1[object Object]
@@ -210,7 +212,7 @@ console.log(1 + null, 1 + "12", 1 + undefined, 1 + ["12"], 1 + { a: 1 }); //1 11
 
 出现小数精度丢失的原因：
 
-​ 由于 JavaScript 采用 IEEE 754 标准，数值存储为 64 位双精度格式，数值精度最多可以达到 53 个二进制位（1 个隐藏位与 52 个有效位）。如果数值的精度超过这个限度，第 54 位及后面的位就会被丢弃，所以在相加的时候会因为小数位的限制而将二进制数字截断。（ 小数相加前会将各自转换为二进制形式 ）
+ 由于 JavaScript 采用 IEEE 754 标准，数值存储为 64 位双精度格式，数值精度最多可以达到 53 个二进制位（1 个隐藏位与 52 个有效位）。如果数值的精度超过这个限度，第 54 位及后面的位就会被丢弃，所以在相加的时候会因为小数位的限制而将二进制数字截断。（ 小数相加前会将各自转换为二进制形式 ）
 
 最大数字：Number.MAX_VALUE（1.7976931348623157e+308）
 
@@ -222,14 +224,171 @@ console.log(1 + null, 1 + "12", 1 + undefined, 1 + ["12"], 1 + { a: 1 }); //1 11
 
 ② 利用第三方库解决。比如 [bignumber.js](https://github.com/MikeMcl/bignumber.js)，[decimal.js](https://github.com/MikeMcl/decimal.js)，以及[big.js](https://github.com/MikeMcl/big.js)等
 
-### 原型和原型链
+### **原型和原型链**
 
-- 1.理解原型设计模式以及`JavaScript`中的原型规则
+- **1.理解原型设计模式以及`JavaScript`中的原型规则**
+
+原型模式：是一种创建型设计模式，Prototype模式允许一个对象再创建另外一个可定制的对象，根本无需知道任何如何创建的细节,工作原理是:通过将一个原型对象传给那个要发动创建的对象，这个要发动创建的对象通过请求原型对象拷贝它们自己来实施创建。
+
+javaScript中的原型规则：
+
+①所有引用类型都有一个_ptoto_（隐式原型）属性，该属性值是一个对象。
+
+②所有函数都有一个prototype（显示原型）属性，该属性是一个对象。
+
+③所有引用类型的_proto_属性指向其构造函数的prototype属性。
+
+④当在寻找一个对象上的属性时，先从对象本身身上找，再从该对象的_proto_（即构造函数上的prototype的属性）属性上找。
+
+原型链：
+
+![image-20210806142237741](../../.vuepress/public/screenshot/image-20210806142237741.png)
+
 - 2.`instanceof`的底层实现原理，手动实现一个`instanceof`
+
+原理：利用原型链来实现判断继承关系。
+
+底层代码实现：
+
+```javascript
+function myInstanceOf(L, R) {
+  const O = R.prototype;
+  L = L.__proto__;
+  while (1) {
+    if (L === null) return false;
+    if (L === O) return true;
+    L = L.__proto__;
+  }
+}
+```
+
 - 4.实现继承的几种方式以及他们的优缺点
-- 5.至少说出一种开源项目(如`Node`)中应用原型继承的案例
-- 6.可以描述`new`一个对象的详细过程，手动实现一个`new`操作符
-- 7.理解`es6 class`构造以及继承的底层实现原理
+
+（1）原型链继承：利用原型链的指向实现
+
+```javascript
+function person() {
+  this.name = "111";
+}
+function xie() {}
+let a = new person();
+xie.prototype = a;
+
+console.log(person.prototype == xie.prototype.__proto__); //true
+```
+
+缺点：①原型中的包含所有引用值会被所有实例间共享；
+
+②子类实例化的时候不能给父类构造函数传参
+
+（2）构造函数继承：利用call或者apply方法在子类构造函数中调用父类构造函数（改变this指向）
+
+```javascript
+function person(age) {
+  this.age = age;
+  this.name = "111";
+}
+function xie(age) {
+  person.call(this, age);
+}
+let b = new xie(112);
+console.log(b.name); //111
+```
+
+缺点：不能使用父类原型上的方法。
+
+（3）组合继承：结合原型链继承和构造函数继承，使用比较多
+
+```javascript
+function person(age) {
+  this.age = age;
+  this.name = "111";
+}
+person.prototype.med = function () {
+  console.log(111);
+};
+function xie(age) {
+  person.call(this, age);
+  this.age = 115;
+}
+xie.prototype = new person();
+let b = new xie(112);
+b.med();  //111
+```
+
+缺点：父类构造函数会被调用两次（一次在子类构造函数，一次在原型指向）
+
+（4）寄生式继承：创建一个实现继承的函数，以某种方式增强对象，并返回这个对象。
+
+```javascript
+function create(obj) {
+  let clone = Object(obj);
+  clone.sayhi = function () {
+    console.log("222");
+  };
+  return clone;
+}
+let person = {
+  name: 333,
+};
+let another = create(person);
+another.sayhi();
+```
+
+缺点：和构造函数继承的缺点一样
+
+（5）寄生组合继承：结合组合继承和寄生继承，去除组合继承调用两次父类构造函数的缺点
+
+```javascript
+function person(age) {
+  this.age = age;
+  this.name = "111";
+}
+person.prototype.med = function () {
+  console.log(111);
+};
+function person(age) {
+  this.age = age;
+  this.name = "111";
+}
+person.prototype.med = function () {
+  console.log(111);
+};function inheritPrototype(subType, superType) {
+  let prototype = Object(superType.prototype); //创建对象
+  prototype.constructor = subType; //增强对象
+  subType.prototype = prototype; //赋值对象
+}
+function xie(age) {
+  person.call(this, age);
+  this.age = 115;
+}
+inheritPrototype(xie, person); //这一步节省调用父类构造函数
+let c = new xie();
+c.med(); //111
+```
+
+（6）class关键字：extends单继承，super()方法向父类传递参数。最好用
+
+- 5.可以描述`new`一个对象的详细过程，手动实现一个`new`操作符
+
+```javascript
+function myNew(con, ...rest) {
+  let obj = {};
+  obj.__proto__ = con.prototype;
+  let result = con.apply(obj, rest);
+  return result instanceof Object ? result : obj;
+}
+
+function person(age) {
+  this.age = age;
+}
+let xie1 = new person(113);
+let xie = myNew(person, 112);
+console.log(xie);  //person { age: 112 }
+console.log(xie1);// person { age: 113 }
+```
+
+- 6.理解`es6 class`构造以及继承的底层实现原理
 
 ### 作用域和闭包
 
