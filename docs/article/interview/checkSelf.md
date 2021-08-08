@@ -522,11 +522,37 @@ a()(2) //1 2
 
 ### 执行机制
 
-- 1.为何`try`里面放`return`，`finally`还会执行，理解其内部机制
-- 2.`JavaScript`如何实现异步编程，可以详细描述`EventLoop`机制
-- 3.宏任务和微任务分别有哪些
-- 4.可以快速分析一个复杂的异步嵌套逻辑，并掌握分析方法
-- 5.使用`Promise`实现串行
+- **1.为何`try`里面放`return`，`finally`还会执行，理解其内部机制**
+
+先执行try里面的语句，如果try里面抛出异常，就执行catch里面的语句，finally里面的语句最终都会执行
+
+- **2.`JavaScript`如何实现异步编程，可以详细描述`EventLoop`机制**
+
+异步编程实现：
+
+①回调函数。容易导致回调地狱
+
+②利用promise实现异步。无法取消改变状态
+
+③生成器Generators/ yield。可以利用yield控制函数的执行
+
+④利用异步函数async/await（基于promise和生成器实现）。非常好用
+
+`EventLoop`机制：javascript是单线程，执行任务分为同步任务和异步任务，异步任务又分为宏任务和微任务。
+
+执行顺序：同步任务—>微任务—>宏任务
+
+- **3.宏任务和微任务分别有哪些**
+
+宏任务：script(整体代码), setTimeout, setInterval, setImmediate（非标准，减少使用）, I/O, UI rendering。
+
+微任务：promise（本身同步）、 Object.observe（观察对象变化，实现数据监听）、 MutationObserver（观察dom变化）
+
+- **4.可以快速分析一个复杂的异步嵌套逻辑，并掌握分析方法**
+- **5.使用`Promise`实现串行**
+
+①
+
 - 6.`Node`与浏览器`EventLoop`的差异
 - 7.如何在保证页面运行流畅的情况下处理海量数据
 
