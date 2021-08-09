@@ -353,7 +353,8 @@ function person(age) {
 }
 person.prototype.med = function () {
   console.log(111);
-};function inheritPrototype(subType, superType) {
+};
+function inheritPrototype(subType, superType) {
   let prototype = Object(superType.prototype); //创建对象
   prototype.constructor = subType; //增强对象
   subType.prototype = prototype; //赋值对象
@@ -551,39 +552,213 @@ a()(2) //1 2
 - **4.可以快速分析一个复杂的异步嵌套逻辑，并掌握分析方法**
 - **5.使用`Promise`实现串行**
 
-①
+①利用reduce
 
-- 6.`Node`与浏览器`EventLoop`的差异
-- 7.如何在保证页面运行流畅的情况下处理海量数据
+```javascript
+const serialPromises = function (promises) {
+  promises.reduce((prev, next) => prev.then((preVal) => next(preVal)), Promise.resolve());
+```
+
+②利用async/await
+
+- **6.`Node`与浏览器`EventLoop`的差异**
+- **7.如何在保证页面运行流畅的情况下处理海量数据**
 
 ### 语法和 API
 
-- 1.理解`ECMAScript`和`JavaScript`的关系
-- 2.熟练运用`es5`、`es6`提供的语法规范，
-- 3.熟练掌握`JavaScript`提供的全局对象（例如`Date`、`Math`）、全局函数（例如`decodeURI`、`isNaN`）、全局属性（例如`Infinity`、`undefined`）
-- 4.熟练应用`map`、`reduce`、`filter` 等高阶函数解决问题
-- 5.`setInterval`需要注意的点，使用`settimeout`实现`setInterval`
-- 6.`JavaScript`提供的正则表达式`API`、可以使用正则表达式（邮箱校验、`URL`解析、去重等）解决常见问题
-- 7.`JavaScript`异常处理的方式，统一的异常处理方案
+- **1.理解`ECMAScript`和`JavaScript`的关系**
+
+`ECMAScript`是`JavaScript`的一部分，是执行标准。
+
+- **2.熟练运用`es5`、`es6`提供的语法规范，**
+- **3.熟练掌握`JavaScript`提供的全局对象（例如`Date`、`Math`）、全局函数（例如`decodeURI`、`isNaN`）、全局属性（例如`Infinity`、`undefined`）**
+- **4.熟练应用`map`、`reduce`、`filter` 等高阶函数解决问题**
+- **5.`setInterval`需要注意的点，使用`settimeout`实现`setInterval`**
+- **6.`JavaScript`提供的正则表达式`API`、可以使用正则表达式（邮箱校验、`URL`解析、去重等）解决常见问题**
+- **7.`JavaScript`异常处理的方式，统一的异常处理方案**
+
+利用try、catch、finally
 
 ## 二、HTML 和 CSS
 
 ### HTML
 
-- 1.从规范的角度理解`HTML`，从分类和语义的角度使用标签
-- 2.常用页面标签的默认样式、自带属性、不同浏览器的差异、处理浏览器兼容问题的方式
-- 3.元信息类标签(`head`、`title`、`meta`)的使用目的和配置方法
-- 4.`HTML5`离线缓存原理
-- 5.可以使用`Canvas API`、`SVG`等绘制高性能的动画
+- **1.从规范的角度理解`HTML`，从分类和语义的角度使用标签**
+- **2.常用页面标签的默认样式、自带属性、不同浏览器的差异、处理浏览器兼容问题的方式**
+- **3.元信息类标签(`head`、`title`、`meta`)的使用目的和配置方法**
+- **4.`HTML5`离线缓存原理**
+
+使用：头部加上<!DOCTYPE HTML> <html manifest = "cache.manifest"> ... </html>
+
+cache.manifest文件构成：
+
+（1）CACHE:表示需要离线存储的资源列表，由于包含manifest文件的页面将被自动离线存储，所以不需要把页面自身也列出来。
+
+（2）NETWORK:表示在它下面列出来的资源只有在在线的情况下才能访问，他们不会被离线存储，所以在离线情况下无法使用这些资源。不过，如果在CACHE和NETWORK中有一个相同的资源，那么这个资源还是会被离线存储，也就是说CACHE的优先级更高。
+
+（3）FALLBACK:表示如果访问第一个资源失败，那么就使用第二个资源来替换他，比如上面这个文件表示的就是如果访问根目录下任何一个资源失败了，那么就去访问offline.html。
+
+- **5.可以使用`Canvas API`、`SVG`等绘制高性能的动画**
 
 ### CSS
 
-- 1.`CSS`盒模型，在不同浏览器的差异
-- 2.`CSS`所有选择器及其优先级、使用场景，哪些可以继承，如何运用`at`规则
-- 3.`CSS`伪类和伪元素有哪些，它们的区别和实际应用
-- 4.`HTML`文档流的排版规则，`CSS`几种定位的规则、定位参照物、对文档流的影响，如何选择最好的定位方式，雪碧图实现原理
-- 5.水平垂直居中的方案、可以实现`6`种以上并对比它们的优缺点
+- **1.`CSS`盒模型，在不同浏览器的差异**
+
+标准盒模型：box-sizing:content-box(盒子的宽和高不包括不包括pading和border)
+
+ie盒模型：box-sizing:border-box(盒子的宽和高不包括不包括pading和border)
+
+- **2.`CSS`所有选择器及其优先级、使用场景，哪些可以继承，如何运用`at`规则**
+
+at（@）规则：
+
+```css
+/*定义字符集*/
+@charset "utf-8"
+/*导入css文件*/
+@import "base.css"
+/*自定义字体*/
+@font-face {}
+/*声明CSS3 animation动画关键帧*/
+@keyframes fadeIn {}
+/*媒体查询*/
+@media{}
+```
+
+
+
+- **3.`CSS`伪类和伪元素有哪些，它们的区别和实际应用**
+
+伪元素：::after、::before、::first-line、::first-letter等
+
+伪类：:hover、:first-child、:last-child、:link、focus、:visited等
+
+- **4.`HTML`文档流的排版规则，`CSS`几种定位的规则、定位参照物、对文档流的影响，如何选择最好的定位方式，雪碧图实现原理**
+
+雪碧图(精灵图)：**CSS Sprites**，利用对应的`background-position`来展现不同位置的图标。
+
+- **5.水平垂直居中的方案、可以实现`6`种以上并对比它们的优缺点**
+
+**已知宽高**
+
+①利用定位
+
+```css
+.parent {
+      position: relative;
+      background-color: black;
+      width: 500px;
+      height: 500px;
+    }
+    .child {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      background-color: blanchedalmond;
+    }
+```
+
+②利用定位和边距
+
+```css
+    .parent {
+      position: relative;
+      background-color: black;
+      width: 500px;
+      height: 500px;
+    }
+    .child {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      left: 50%;
+      top: 50%;
+      margin: -100px 0 0 -100px;
+      background-color: blanchedalmond;
+    }
+```
+
+**未知宽高**
+
+①利用定位和2D平移
+
+```css
+.parent {
+      position: relative;
+      background-color: black;
+      width: 500px;
+      height: 500px;
+    }
+    .child {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background-color: blanchedalmond;
+    }
+```
+
+②flex布局
+
+```css
+.parent {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: black;
+      width: 500px;
+      height: 500px;
+    }
+    .child {
+      width: 200px;
+      height: 200px;
+
+      background-color: blanchedalmond;
+    }
+```
+
+③网格布局
+
+```css
+.parent {
+      display: grid;
+      background-color: black;
+      width: 500px;
+      height: 500px;
+    }
+    .child {
+      align-self: center;
+      justify-self: center;
+      width: 200px;
+      height: 200px;
+
+      background-color: blanchedalmond;
+    }
+```
+
+④文字水平居中（需要知道高度）
+
+```css
+.div {
+      width: 200px;
+      height: 200px;
+      text-align: center;
+      line-height: 200px;css
+      background-color: blanchedalmond;
+    }
+```
+
 - 6.`BFC`实现原理，可以解决的问题，如何创建`BFC`
+
+BFC实现原理：
+
 - 7.可使用`CSS`函数复用代码，实现特殊效果
 - 8.`PostCSS`、`Sass`、`Less`的异同，以及使用配置，至少掌握一种
 - 9.`CSS`模块化方案、如何配置按需加载、如何防止`CSS`阻塞渲染
