@@ -755,9 +755,25 @@ at（@）规则：
     }
 ```
 
-- 6.`BFC`实现原理，可以解决的问题，如何创建`BFC`
+- **6.`BFC`实现原理，可以解决的问题，如何创建`BFC`**
 
-BFC实现原理：
+BFC：块级格式化上下文。BFC中的内容不会影响到外面的盒子
+
+如何创建：
+
+①body 根元素
+②浮动元素：float 除 none 以外的值
+③绝对定位元素：position (absolute、fixed)
+④display 为 inline-block、table-cells、flex
+⑤overflow 除了 visible 以外的值 (hidden、auto、scroll)
+
+应用：
+
+①解决外边距塌陷
+
+② BFC 可以包含浮动的元素（清除浮动）
+
+③BFC 可以阻止元素被浮动元素覆盖
 
 - 7.可使用`CSS`函数复用代码，实现特殊效果
 - 8.`PostCSS`、`Sass`、`Less`的异同，以及使用配置，至少掌握一种
