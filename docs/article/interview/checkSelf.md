@@ -775,19 +775,130 @@ BFC：块级格式化上下文。BFC中的内容不会影响到外面的盒子
 
 ③BFC 可以阻止元素被浮动元素覆盖
 
-- 7.可使用`CSS`函数复用代码，实现特殊效果
-- 8.`PostCSS`、`Sass`、`Less`的异同，以及使用配置，至少掌握一种
-- 9.`CSS`模块化方案、如何配置按需加载、如何防止`CSS`阻塞渲染
-- 10.熟练使用`CSS`实现常见动画，如渐变、移动、旋转、缩放等等
-- 11.`CSS`浏览器兼容性写法，了解不同`API`在不同浏览器下的兼容性情况
-- 12.掌握一套完整的响应式布局方案
+- **7.可使用`CSS`函数复用代码，实现特殊效果**
+- **8.`PostCSS`、`Sass`、`Less`的异同，以及使用配置，至少掌握一种**
+- **9.`CSS`模块化方案、如何配置按需加载、如何防止`CSS`阻塞渲染**
+
+scoped
+
+- **10.熟练使用`CSS`实现常见动画，如渐变、移动、旋转、缩放等等**
+- **11.`CSS`浏览器兼容性写法，了解不同`API`在不同浏览器下的兼容性情况**
+- **12.掌握一套完整的响应式布局方案**
 
 ### 手写
 
-- 1.手写图片瀑布流效果
-- 2.使用`CSS`绘制几何图形（圆形、三角形、扇形、菱形等）
-- 3.使用纯`CSS`实现曲线运动（贝塞尔曲线）
-- 4.实现常用布局（三栏、圣杯、双飞翼、吸顶），可是说出多种方式并理解其优缺点
+- 1.**手写图片瀑布流效果**
+
+利用flex布局
+
+```html
+<div class="masonry">
+    <!-- 第一列 -->
+    <div class="column">
+        <div class="item"></div>
+        <!-- more items-->
+    </div>
+    <!-- 第二列 -->
+    <div class="column">
+        <div class="item"></div>
+        <!-- more items-->
+    </div>
+    <!-- 第三列 -->
+    <div class="column">
+        <div class="item"></div>
+        <!-- more items-->
+    </div>
+</div>
+<style>
+.masonry {
+    display: flex; // 设置为Flex容器
+    flex-direction: row; // 主轴方向设置为水平方向
+}
+
+.column {
+    display: flex; // 设置为Flex容器
+    flex-direction: column; // 主轴方向设置为垂直方向
+}
+</style>
+<javascript>
+    
+    /*伪代码
+    可以利用原生js动态创建img节点添加到相应的dom节点下
+    */
+    
+    let data1 = [], //第一列
+    data2 = [], //第二列
+    data3 = [], //第三列
+    i = 0;
+while (i < data.length) {
+    data1.push(data[i++]);
+    if (i < data.length) {
+        data2.push(data[i++]);
+    }
+    if (i < data.length) {
+        data3.push(data[i++]);
+    }
+}
+return {
+    //第一列
+    data1,
+    //第二列
+    data2,
+    //第三列
+    data3
+};
+
+</javascript>
+
+```
+
+- **2.使用`CSS`绘制几何图形（圆形、三角形、扇形、菱形等）**
+
+①圆形：
+
+```css
+width：100px;
+height:100px;
+```
+
+②三角形：
+
+```html
+ <style>
+      .triangle1-wrap {
+        width: 50px;
+        height: 50px;
+        overflow: hidden;
+      }
+      .triangle1 {
+        width: 50px;
+        height: 50px;
+        background-color: red;
+        transform: rotateZ(45deg);
+        margin-top: 35px;
+      }
+    </style>
+    <div class="triangle1-wrap">
+      <div class="triangle1"></div>
+    </div>
+
+//利用border
+ <style>
+ .triangle2{
+        width:0px;
+        height:0px;
+        border-top:solid 50px red;
+        border-bottom:solid 50px transparent;
+        border-left:solid 50px transparent;
+        border-right:solid 50px transparent;
+    }
+</style>
+```
+
+③
+
+- **3.使用纯`CSS`实现曲线运动（贝塞尔曲线）**
+- **4.实现常用布局（三栏、圣杯、双飞翼、吸顶），可是说出多种方式并理解其优缺点**
 
 ## 三、计算机基础
 
