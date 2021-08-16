@@ -1114,13 +1114,15 @@ http2.0：
 
 - **9.`HTTPS`的加密原理，如何开启`HTTPS`，如何劫持`HTTPS`请求**
 
-- 10.理解`WebSocket`协议的底层原理、与`HTTP`的区别
+- **10.理解`WebSocket`协议的底层原理、与`HTTP`的区别**
+
+全双工通信，服务端可以主动推送资源到客户端，主要用于实时数据的展示
 
 ### 设计模式
 
-- 1.熟练使用前端常用的设计模式编写代码，如单例模式、装饰器模式、代理模式等
-- 2.发布订阅模式和观察者模式的异同以及实际应用
-- 3.可以说出几种设计模式在开发中的实际应用，理解框架源码中对设计模式的应用
+- **1.熟练使用前端常用的设计模式编写代码，如单例模式、装饰器模式、代理模式等**
+- **2.发布订阅模式和观察者模式的异同以及实际应用**
+- **3.可以说出几种设计模式在开发中的实际应用，理解框架源码中对设计模式的应用**
 
 ## 四、数据结构和算法
 
@@ -1129,7 +1131,81 @@ http2.0：
 ### JavaScript 编码能力
 
 - 1.多种方式实现数组去重、扁平化、对比优缺点
+
+去重：
+
+```javascript
+//改变自身
+function outRepeat1(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      if (arr[i] === arr[j]) {
+        arr.splice(j, 1)
+        j-- //防止跳过元素
+      }
+    }
+  }
+  return arr
+}
+
+
+//重新赋值数组
+function outRepeat2(arr) {
+  let result = []
+  for (let i = 0; i < arr.length; i++) {
+    if (result.indexOf(arr[i]) === -1) {
+      result.push(arr[i])
+    }
+  }
+  return result
+}
+
+```
+
+扁平化：
+
+```javascript
+function flatDeep1(arr) {
+  let result = []
+  for (let i = 0; i < arr.length; i++) {
+    if (Array.isArray(arr[i])) {
+      result = result.concat(flatDeep(arr[i]))
+    } else {
+      result.push(arr[i])
+    }
+  }
+  return result
+}
+function flatDeep2(arr) {
+  return arr.reduce(function (pre, next) {
+    if (Array.isArray(next)) {
+      return pre.concat(flatDeep(next))
+    } else {
+      return pre.concat(next)
+    }
+  }, [])
+}
+//第三种，利用flat方法
+```
+
 - 2.多种方式实现深拷贝、对比优缺点
+
+```javascript
+ function deepCopy(target) {
+            let newTar = target instanceof Array ? [] : {}
+            if (target && typeof(target) == 'object') {
+                for (let item in target) {
+                    if (newTar.hasOwnProperty(item)) {
+                        newTar[item] = deepCopy(target[item])
+                    } else {
+                        newTar[item] = target[item];
+                    }
+                }
+            }
+            return newTar;
+        }
+```
+
 - 3.手写函数柯里化工具函数、并理解其应用场景和优势
 - 4.手写防抖和节流工具函数、并理解其内部原理和应用场景
 - 5.实现一个`sleep`函数
@@ -1139,7 +1215,65 @@ http2.0：
 - 1.手动实现`call、apply、bind`
 - 2.手动实现符合`Promise/A+`规范的`Promise`、手动实现`async await`
 - 3.手写一个`EventEmitter`实现事件发布、订阅
+
+```JavaScript
+// 发布订阅模式
+class EventEmitter {
+  constructor() {
+    // 事件对象，存放订阅的名字和事件  如:  { click: [ handle1, handle2 ]  }
+    this.events = {}
+  }
+  // 订阅事件的方法
+  on(eventName, callback) {
+    if (!this.events[eventName]) {
+      // 一个名字可以订阅多个事件函数
+      this.events[eventName] = [callback]
+    } else {
+      // 存在则push到指定数组的尾部保存
+      this.events[eventName].push(callback)
+    }
+  }
+  // 触发事件的方法
+  emit(eventName, ...rest) {
+    // 遍历执行所有订阅的事件
+    this.events[eventName] &&
+      this.events[eventName].forEach(f => f.apply(this, rest))
+  }
+  // 移除订阅事件
+  remove(eventName, callback) {
+    if (this.events[eventName]) {
+      this.events[eventName] = this.events[eventName].filter(f => f != callback)
+    }
+  }
+  // 只执行一次订阅的事件，然后移除
+  once(eventName, callback) {
+    // 绑定的时fn, 执行的时候会触发fn函数
+    const fn = (...rest) => {
+      callback.apply(this, rest) // fn函数中调用原有的callback
+      this.remove(eventName, fn) // 删除fn, 再次执行的时候之后执行一次
+    }
+    this.on(eventName, fn)
+  }
+}
+
+```
+
 - 4.可以说出两种实现双向绑定的方案、可以手动实现
+
+```JavaScript
+const person = {}
+Object.defineProperty(person, 'name', {
+    get: function() {
+        console.log('获取到name了')
+    },
+    set: function(val) {
+        console.log('设置了name为' + val)
+    }
+})
+person.name  //获取到name了
+person.name = '小谢'  //设置了name为小谢
+```
+
 - 5.手写`JSON.stringify`、`JSON.parse`
 - 6.手写一个模版引擎，并能解释其中原理
 - 7.手写`懒加载`、`下拉刷新`、`上拉加载`、`预加载`等效果
