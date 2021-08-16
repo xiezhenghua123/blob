@@ -4,8 +4,6 @@ time: 2021/8/2
 category: element-ui
 title: el-menu菜单栏选中效果失效问题
 original: true
-navbar: true
-sidebar: "auto"
 ---
 
 ### **前言**
