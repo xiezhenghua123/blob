@@ -958,7 +958,7 @@ height:100px;
 
 ④菱形
 
-```css
+```
 利用transform: skew()和transform-origin: 0% 100%; 
 ```
 
@@ -1207,45 +1207,13 @@ function flatDeep2(arr) {
 ```
 
 - 3.手写函数柯里化工具函数、并理解其应用场景和优势
-
 - 4.手写防抖和节流工具函数、并理解其内部原理和应用场景
-
 - 5.实现一个`sleep`函数
-
-  ```javascript
-  function sleep(time) {
-    return new Promise((reslove, reject) => {
-      setTimeout(() => {
-        reslove();
-      }, time);
-    });
-  }
-  ```
 
 ### 手动实现前端轮子
 
 - 1.手动实现`call、apply、bind`
-
-```javascript
-Function.prototype.realizeCall = function (context) {
-  if (typeof this !== "function") {
-    throw new TypeError("not funciton");
-  }
-  context = context || window;
-  context.fn = this;
-  let arg = [...arguments].slice(1);
-  let result = context.fn(...arg);
-  delete context.fn;
-  return result;
-};
-```
-
-
-
 - 2.手动实现符合`Promise/A+`规范的`Promise`、手动实现`async await`
-
-
-
 - 3.手写一个`EventEmitter`实现事件发布、订阅
 
 ```JavaScript
@@ -1306,14 +1274,15 @@ person.name  //获取到name了
 person.name = '小谢'  //设置了name为小谢
 ```
 
-- 5.手写`JSON.stringify`、`JSON.parse`
+- **5.手写`JSON.stringify`、`JSON.parse`**
 
-属性为function、undefind、正则等，不能进行拷贝
+用这个函数实现深拷贝缺点：如果拷贝对象属性有fun、undefind、正则、数组对象等，内容会丢失
 
-- 6.手写一个模版引擎，并能解释其中原理
+- 6.**手写一个模版引擎，并能解释其中原理**
+
+利用正则表达式可以实现
+
 - 7.手写`懒加载`、`下拉刷新`、`上拉加载`、`预加载`等效果
-
-
 
 ### 数据结构
 
