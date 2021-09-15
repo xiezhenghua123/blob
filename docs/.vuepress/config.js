@@ -69,7 +69,7 @@ module.exports = config({
       '/article/javascript/': ['Array', 'fiften'],
       '/article/vue/': ['responsive'],
       '/article/interview/': ['url', 'checkSelf'],
-      '/article/trap/': ['el-menu', 'forEachBad'],
+      '/article/trap/': ['el-menu', 'forEachBad','refresh'],
     },
     darkmode: 'auto-switch',
     hostname: 'https://xiezhenghua123.github.io',
