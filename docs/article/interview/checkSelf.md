@@ -409,7 +409,7 @@ console.log(xie1);// person { age: 113 }
 
 - **4.`this`在几种不同使用场景的取值**
 
-①全局作用域下this指向window（node环境下指向global）
+①全局作用域下this指向window（node环境下指向{}，和global无关）
 
 ②函数作用域下，this指向调用这个函数的上下文对象
 
