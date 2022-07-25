@@ -1,24 +1,35 @@
 {
-    "name": "blob",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-        "dev": "vuepress dev docs",
-        "build": "vuepress build docs",
-        "eject": "vuepress eject-hope docs"
-    },
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "vuepress": "^1.8.2",
-        "vuepress-theme-reco": "^1.6.6"
-    },
-    "dependencies": {
-        "async-validator": "^1.11.5",
-        "element-ui": "^2.15.2",
-        "vue": "^2.6.14",
-        "vue-server-renderer": "^2.6.14",
-        "vuepress-theme-hope": "^1.18.4"
-    }
+  "name": "blob",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vuepress dev docs",
+    "build": "vuepress build docs",
+    "eject": "vuepress eject-hope docs"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vuepress": "^1.8.2"
+  },
+  "dependencies": {
+    "async-validator": "^1.11.5",
+    "element-ui": "^2.15.2",
+    "vue": "^2.6.14",
+    "vue-server-renderer": "^2.6.14",
+    "vuepress-theme-hope": "^1.30.0"
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiezhenghua123/blob.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/xiezhenghua123/blob/issues"
+  },
+  "homepage": "https://github.com/xiezhenghua123/blob#readme",
+  "description": ""
 }
