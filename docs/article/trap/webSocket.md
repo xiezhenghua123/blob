@@ -54,11 +54,9 @@ class Socket {
   constructor(url, options, receiveCb) {
     if (!url) {
       throw new Error('URL参数必传')
-      return
     }
     if (typeof receiveCb !== 'function') {
       throw new Error('receiveCb must function')
-      return
     }
     this.url = url
     this.receiveCb = receiveCb
