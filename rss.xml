@@ -1,0 +1,2204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <atom:link href="https://xiezhenghua123.github.io/blob/rss.xml" rel="self" type="application/rss+xml"/>
+    <title>前端坎坷之路</title>
+    <link>https://xiezhenghua123.github.io/blob/</link>
+    <description>日常学习总结，没事儿多来逛逛</description>
+    <language>zh-CN</language>
+    <pubDate>Tue, 26 Jul 2022 07:42:09 GMT</pubDate>
+    <lastBuildDate>Tue, 26 Jul 2022 07:42:09 GMT</lastBuildDate>
+    <generator>@mr-hope/vuepress-plugin-feed</generator>
+    <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+    <category>websocket</category>
+    <category>日常开发踩坑</category>
+    <category>git</category>
+    <category>javascript</category>
+    <category>面经</category>
+    <category>element-ui</category>
+    <category>vue</category>
+    <category>vuepress</category>
+    <item>
+      <title>websocket封装</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/webSocket/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/webSocket/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">websocket封装</source>
+      <category>websocket</category>
+      <pubDate>Mon, 25 Jul 2022 10:04:58 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="websocket的作用"> <strong>webSocket的作用</strong></h3>
+<p>用于实时性的数据传输，相对于轮询，性能开销小，实时性高。</p>
+<h3 id="构造函数"> <strong>构造函数</strong></h3>
+<p>webSocket(url[,protocols])</p>
+<p>url：必传，用于连接的socket链接。</p>
+<p>protocols：可选，一个协议字符串或者一个包含协议字符串的数组。用于和服务端协定传输的子协议。</p>
+<h3 id="常用监听事件"> <strong>常用监听事件</strong></h3>
+<p><strong>open</strong>：当连接建立时，会执行此事件。</p>
+<p><strong>close</strong>：当连接关闭时，会执行的事件（执行error事件后，后面会执行close事件）。</p>
+<p><strong>message</strong>：当接收到服务端的消息时，会执行此事件。</p>
+<p><strong>error</strong>：当连接出现错误时（例如网络断开），会执行此事件。</p>
+<p>以上事件可以用addEventListener进行监听，从而执行相应的回调函数。同时也可以利用想用的属性来执行，例如onopen、onclose等。</p>
+<h3 id="封装"> <strong>封装</strong></h3>
+<div><pre><code><span>// 默认值,options参数配置</span>
+<span>const</span> defaultConfig <span>=</span> <span>{</span>
+  <span>isReconnect</span><span>:</span> <span>true</span><span>,</span> <span>//是否断线重连</span>
+  <span>limitConnect</span><span>:</span> <span>10</span><span>,</span> <span>//重连总次数</span>
+  <span>timeout</span><span>:</span> <span>5000</span><span>,</span> <span>//重连时间间隔</span>
+  <span>protocols</span><span>:</span><span>''</span>  <span>//子协议</span>
+<span>}</span>
+
+<span>class</span> <span>Socket</span> <span>{</span>
+  limitTime <span>=</span> <span>0</span> <span>//将重连总次数存储起来，方便初始化</span>
+  receiveCb <span>=</span> <span>null</span>
+  instansce <span>=</span> <span>null</span> <span>//socket实例</span>
+  limitConnect <span>=</span> <span>0</span> <span>//重连总次数</span>
+  time <span>=</span> <span>0</span> <span>//重连次序</span>
+  interval <span>=</span> <span>null</span>
+  timeout <span>=</span> <span>0</span> <span>//重连时间间隔</span>
+  isReconnect <span>=</span> <span>true</span> <span>//是否断线重连</span>
+
+  <span>constructor</span><span>(</span><span>url<span>,</span> options<span>,</span> receiveCb</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span><span>!</span>url<span>)</span> <span>{</span>
+      <span>throw</span> <span>new</span> <span>Error</span><span>(</span><span>'URL参数必传'</span><span>)</span>
+    <span>}</span>
+    <span>if</span> <span>(</span><span>typeof</span> receiveCb <span>!==</span> <span>'function'</span><span>)</span> <span>{</span>
+      <span>throw</span> <span>new</span> <span>Error</span><span>(</span><span>'receiveCb must function'</span><span>)</span>
+    <span>}</span>
+    <span>this</span><span>.</span>url <span>=</span> url
+    <span>this</span><span>.</span>receiveCb <span>=</span> receiveCb
+    <span>const</span> config <span>=</span> <span>{</span> <span>...</span>defaultConfig<span>,</span> <span>...</span>options <span>}</span>
+    <span>const</span> <span>{</span> limitConnect<span>,</span> timeout<span>,</span> isReconnect， protocols <span>}</span> <span>=</span> config
+    <span>this</span><span>.</span>limitConnect <span>=</span> limitConnect
+    <span>this</span><span>.</span>limitTime <span>=</span> limitConnect
+    <span>this</span><span>.</span>timeout <span>=</span> timeout
+    <span>this</span><span>.</span>isReconnect <span>=</span> isReconnect
+    <span>this</span><span>.</span>instansce <span>=</span> <span>null</span>
+    <span>this</span><span>.</span>instansce <span>=</span> <span>this</span><span>.</span><span>connect</span><span>(</span>url，protocols<span>)</span>
+    <span>this</span><span>.</span><span>handleEvent</span><span>(</span><span>)</span>
+  <span>}</span>
+  <span>handleEvent</span><span>(</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>onopen</span> <span>=</span> <span>e</span> <span>=></span> <span>{</span>
+      <span>this</span><span>.</span><span>openHandler</span><span>(</span>e<span>)</span>
+    <span>}</span> <span>//连接上时回调</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>onclose</span> <span>=</span> <span>e</span> <span>=></span> <span>{</span>
+      <span>this</span><span>.</span><span>closeHandler</span><span>(</span>e<span>)</span>
+    <span>}</span> <span>//断开连接时回调</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>onmessage</span> <span>=</span> <span>e</span> <span>=></span> <span>{</span>
+      <span>this</span><span>.</span><span>messageHandler</span><span>(</span>e<span>)</span>
+    <span>}</span> <span>//收到服务端消息</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>onerror</span> <span>=</span> <span>e</span> <span>=></span> <span>{</span>
+      <span>this</span><span>.</span><span>errorHandler</span><span>(</span><span>)</span>
+    <span>}</span> <span>//连接出错</span>
+  <span>}</span>
+  <span>openHandler</span><span>(</span><span>)</span> <span>{</span>
+    console<span>.</span><span>log</span><span>(</span><span>'连接成功！'</span><span>)</span>
+    <span>this</span><span>.</span><span>reset</span><span>(</span><span>)</span>
+  <span>}</span>
+  <span>messageHandler</span><span>(</span><span>e</span><span>)</span> <span>{</span>
+    <span>const</span> data <span>=</span> <span>this</span><span>.</span><span>getMsg</span><span>(</span>e<span>)</span>
+    <span>this</span><span>.</span><span>receiveCb</span><span>(</span>data<span>)</span>
+  <span>}</span>
+  <span>reset</span><span>(</span><span>)</span> <span>{</span>
+    <span>clearTimeout</span><span>(</span><span>this</span><span>.</span>interval<span>)</span>
+    <span>this</span><span>.</span>time <span>=</span> <span>0</span>
+    <span>this</span><span>.</span>limitConnect <span>=</span> <span>this</span><span>.</span>limitTime
+  <span>}</span>
+  <span>closeHandler</span><span>(</span><span>e</span><span>)</span> <span>{</span>
+    console<span>.</span><span>log</span><span>(</span>e<span>.</span>code<span>)</span>
+    <span>if</span> <span>(</span>e<span>.</span>code <span>===</span> <span>1000</span><span>)</span> <span>{</span>
+      console<span>.</span><span>log</span><span>(</span><span>'连接已经断开'</span><span>)</span>
+      <span>return</span>
+    <span>}</span>
+    <span>if</span> <span>(</span><span>this</span><span>.</span>isReconnect<span>)</span> <span>{</span>
+      console<span>.</span><span>log</span><span>(</span><span>'连接断开，重连中'</span><span>)</span>
+      <span>this</span><span>.</span><span>reconnect</span><span>(</span><span>this</span><span>.</span>url<span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>errorHandler</span><span>(</span><span>)</span> <span>{</span>
+    console<span>.</span><span>error</span><span>(</span><span>'出错了,重连中'</span><span>)</span>
+  <span>}</span>
+
+  <span>sendMsg</span><span>(</span><span>obj</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>send</span><span>(</span><span>JSON</span><span>.</span><span>stringify</span><span>(</span>obj<span>)</span><span>)</span>
+  <span>}</span>
+  <span>getMsg</span><span>(</span><span>e</span><span>)</span> <span>{</span>
+    <span>return</span> <span>JSON</span><span>.</span><span>parse</span><span>(</span><span>JSON</span><span>.</span><span>parse</span><span>(</span>e<span>.</span>data<span>)</span><span>)</span>
+  <span>}</span>
+  <span>close</span><span>(</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>instansce<span>.</span><span>close</span><span>(</span><span>1000</span><span>)</span>
+  <span>}</span>
+  <span>reconnect</span><span>(</span><span>url</span><span>)</span> <span>{</span>
+    <span>clearTimeout</span><span>(</span><span>this</span><span>.</span>interval<span>)</span>
+    <span>if</span> <span>(</span><span>this</span><span>.</span>limitConnect <span>></span> <span>0</span><span>)</span> <span>{</span>
+      <span>this</span><span>.</span>limitConnect<span>--</span>
+      console<span>.</span><span>log</span><span>(</span><span><span>`</span><span>第</span><span><span>${</span><span>++</span><span>this</span><span>.</span>time<span>}</span></span><span>次重连</span><span>`</span></span><span>)</span>
+      <span>this</span><span>.</span>interval <span>=</span> <span>setTimeout</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span>
+        <span>this</span><span>.</span>instansce <span>=</span> <span>null</span>
+        <span>this</span><span>.</span>instansce <span>=</span> <span>this</span><span>.</span><span>connect</span><span>(</span>url<span>)</span>
+        <span>this</span><span>.</span><span>handleEvent</span><span>(</span><span>)</span>
+      <span>}</span><span>,</span> <span>this</span><span>.</span>timeout<span>)</span>
+    <span>}</span> <span>else</span> <span>{</span>
+      console<span>.</span><span>error</span><span>(</span><span>'重连失败，请检查网络是否连接。'</span><span>)</span>
+      <span>clearTimeout</span><span>(</span><span>this</span><span>.</span>interval<span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>connect</span><span>(</span><span>wsUrl，protocols</span><span>)</span> <span>{</span>
+    <span>let</span> websocket <span>=</span> <span>null</span>
+    <span>try</span> <span>{</span>
+      websocket <span>=</span> <span>new</span> <span>WebSocket</span><span>(</span>wsUrl，protocols<span>)</span>
+    <span>}</span> <span>catch</span> <span>(</span>e<span>)</span> <span>{</span>
+      console<span>.</span><span>log</span><span>(</span><span>'catch'</span> <span>+</span> e<span>)</span>
+      <span>throw</span> <span>new</span> <span>Error</span><span>(</span><span>'未检出到websocket连接'</span><span>)</span>
+    <span>}</span>
+    <span>return</span> websocket
+  <span>}</span>
+<span>}</span>
+
+<span>export</span> <span>default</span> Socket
+
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br><span>59</span><br><span>60</span><br><span>61</span><br><span>62</span><br><span>63</span><br><span>64</span><br><span>65</span><br><span>66</span><br><span>67</span><br><span>68</span><br><span>69</span><br><span>70</span><br><span>71</span><br><span>72</span><br><span>73</span><br><span>74</span><br><span>75</span><br><span>76</span><br><span>77</span><br><span>78</span><br><span>79</span><br><span>80</span><br><span>81</span><br><span>82</span><br><span>83</span><br><span>84</span><br><span>85</span><br><span>86</span><br><span>87</span><br><span>88</span><br><span>89</span><br><span>90</span><br><span>91</span><br><span>92</span><br><span>93</span><br><span>94</span><br><span>95</span><br><span>96</span><br><span>97</span><br><span>98</span><br><span>99</span><br><span>100</span><br><span>101</span><br><span>102</span><br><span>103</span><br><span>104</span><br><span>105</span><br><span>106</span><br><span>107</span><br><span>108</span><br><span>109</span><br><span>110</span><br><span>111</span><br><span>112</span><br><span>113</span><br><span>114</span><br><span>115</span><br><span>116</span><br><span>117</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br><span>59</span><br><span>60</span><br><span>61</span><br><span>62</span><br><span>63</span><br><span>64</span><br><span>65</span><br><span>66</span><br><span>67</span><br><span>68</span><br><span>69</span><br><span>70</span><br><span>71</span><br><span>72</span><br><span>73</span><br><span>74</span><br><span>75</span><br><span>76</span><br><span>77</span><br><span>78</span><br><span>79</span><br><span>80</span><br><span>81</span><br><span>82</span><br><span>83</span><br><span>84</span><br><span>85</span><br><span>86</span><br><span>87</span><br><span>88</span><br><span>89</span><br><span>90</span><br><span>91</span><br><span>92</span><br><span>93</span><br><span>94</span><br><span>95</span><br><span>96</span><br><span>97</span><br><span>98</span><br><span>99</span><br><span>100</span><br><span>101</span><br><span>102</span><br><span>103</span><br><span>104</span><br><span>105</span><br><span>106</span><br><span>107</span><br><span>108</span><br><span>109</span><br><span>110</span><br><span>111</span><br><span>112</span><br><span>113</span><br><span>114</span><br><span>115</span><br><span>116</span><br><span>117</span><br></div></div><h3 id="结语"> <strong>结语</strong></h3>
+<p>以上的webSocket封装加入了断开重连机制，但是还存在一定的性能问题。</p>
+<p>心跳监测机制暂未加入，需要后端配合。</p>
+<p>close、open、mesage、error四种事件未开发，若需开放，可以用events进行事件监听派发开放。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>uniapp样式穿透问题</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/uniapp/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/uniapp/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">uniapp样式穿透问题</source>
+      <category>日常开发踩坑</category>
+      <pubDate>Thu, 31 Mar 2022 12:46:33 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>我在使用uniapp开发微信小程序毕设时，使用::v-deep对子组件进行样式穿透时，微信小程序中总是不生效，h5却没问题。</p>
+<h3 id="原因"> <strong>原因</strong></h3>
+<p>1、使用样式穿透时的页面必须要在pages.json中进行注册</p>
+<h3 id="补充"> <strong>补充</strong></h3>
+<p>1、非H5端默认并未启用 scoped，如需要隔离组件样式可以在 style 标签增加 scoped 属性，H5端为了隔离页面间的样式默认启用了 scoped</p>
+<p>2、App.vue中引入的style默认未加scoped，全局样式可以从这里引入</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>代码回滚的不同方式及其区别</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/git/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/git/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">代码回滚的不同方式及其区别</source>
+      <category>git</category>
+      <pubDate>Thu, 25 Nov 2021 08:06:13 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>日常开发中，git 是多人协作开发中必不可少的代码管理工具，有时候，我们难免会遇到提交了错误代码的情况需要 git 回滚。下面我就总结一下：</p>
+<h3 id="git-reset"> <strong>git reset</strong></h3>
+<p>git reset 是回退到某一次 commit，并且把这个 commit 后面的所有 commit 全部删除。</p>
+<p>git reset 包括 git reset --hard 和 git reset --soft，两者区别：--hard 会将强制回退到某个提交，会将你当前写的还未提交的代码删除；--soft 则只会回退到某个提交，不会删除当前未提交的代码。</p>
+<p>相关命令：（HEAD 永远指向当前最新提交）</p>
+<p>git reset --hard/--soft HEAD^ 回退到上一次提交</p>
+<p>git reset --hard/--soft HEAD^^ 回退到上上次提交</p>
+<p>git reset --hard/--soft commit_id 回退到某次 commit</p>
+<p>当我们的代码已经 push 到远程仓库，再使用 git reset，会遇到无法 push 的情况，这时候只能强制 push：git push -f</p>
+<h3 id="git-revert"> <strong>git revert</strong></h3>
+<p>git revert 是撤销某些已经提交的 commit，并生成一次新的提交，是正向的，这点和 reset 不同。例如当前 commit 顺序：A-&gt;B-&gt;C-&gt;-D-&gt;E，我们需要移除提交 C：git revert C；我们需要移除 BCD：git revert A..D,后面跟的是一个前开后闭区间</p>
+<p>相关命令：</p>
+<p>git revert HEAD^ 撤销前一次提交（命令同 git reset）</p>
+<p><strong>应用场景：</strong></p>
+<p>正在开发的分支 branch,主分支 master。当我们将 branch 合并到 master 后，产生冲突修改并提交，产生 commit1，之后又提交了一个新的 commit2。上线之后，我们发现了 branch 合并的分支有严重的问题。这时候我们需要 revert 掉 commit1，并且保留在 master 上修改的冲突，应该怎么做呢？</p>
+<p>所有的 merge 都会存在两个 commit，左边的是主分支的 commit，右边是合并分支 branch 的 commit</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20211125151159849.png" alt=""></p>
+<p>这时候我们需要保留 master 上的内容，revert 掉合并分支的内容,保留 master 上内容：git revert d3a8e8f59 或者 git revert -m 1 a4142311ee54758be528c6827aa31815d291f8e2（1 表示左边，2 表示右边），revert 之后，master 上面会产生一个新的 commit3</p>
+<p>当 branch 的上 bug 改好后，此时我们需要将 master 上的 commit3 提交 revert 掉，才能将 branch 合并到 master，不然会没有效果。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>常见搜索后，不同tab页展示不同信息的代码方案设计</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/refresh/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/refresh/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">常见搜索后，不同tab页展示不同信息的代码方案设计</source>
+      <category>javascript</category>
+      <pubDate>Wed, 15 Sep 2021 10:13:24 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>项目开发过程中，我遇到到了这样一个问题，当时有这样一个需求，上方搜索一个企业，下面的几个 tab 页展示对应的数据。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210915162344520.png" alt="image-20210915162344520"></p>
+<p>我开始设计时，把每一个 tab 页当成一个路由，然后把这个企业的 eid 传到每个 tab 页中（每个 tab 页用 watch 进行监听），进行数据展示。这样就会存在一个问题，我只要一搜索企业，下面的每个 tab 页中的接口都会调用，很不友好。</p>
+<p>所以，希望设计成这样：切换到每个 tab 页时，才调用对应的接口，并且同一家公司，tab 页切换过去一次后，第二次切换过去，不需要再调接口。</p>
+<h3 id="开发过程"> <strong>开发过程</strong></h3>
+<p>首先，tab 监听 eid 时要判断是否有新的 eid 进来，如果有才进行接口调用，因为 vue 数据更新就是通过 watch 来操作的，只要数据更新了，每个子组件的 watch 都会执行到。我最开始设计的时候没有执行到这个情况，所以一搜索企业，就会调用所有接口。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210915164745744.png" alt="image-20210915164745744"></p>
+<p>里面的 reRender 函数是强制刷新函数(利用 v-if 进行子组件强制刷新，利用 keep-alive 缓存 eid)</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210915164909417.png" alt="image-20210915164909417"></p>
+<p>然后，每个组件都在自己的 mounted 或者 created 生命周期请求接口。</p>
+<p>tab 页切换时，利用 actived 生命周期进行一些操作，判断缓存的 eid 是否和新的 eid 相等，是的话就不做什么，不是的话就进行刷新操作</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210915180703330.png" alt="image-20210915180703330"></p>
+<h3 id="最终代码"> <strong>最终代码</strong></h3>
+<p><img src="./../../.vuepress/public/screenshot/image-20210915180806104.png" alt="image-20210915180806104"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>红宝书第十五章-DOM扩展</title>
+      <link>https://xiezhenghua123.github.io/blob/article/javascript/fiften/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/javascript/fiften/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">红宝书第十五章-DOM扩展</source>
+      <category>javascript</category>
+      <pubDate>Sat, 11 Sep 2021 15:22:29 GMT</pubDate>
+      <content:encoded><![CDATA[<p><img src="./../../.vuepress/public/screenshot/fiftenpng.png" alt="fiftenpng"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>forEach中return失效</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/forEachBad/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/forEachBad/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">forEach中return失效</source>
+      <category>javascript</category>
+      <pubDate>Mon, 16 Aug 2021 10:07:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="问题描述"> <strong>问题描述</strong></h3>
+<p>今天开发过程中遇到了一个关于 forEach 问题，总是 return undefind。代码如下：</p>
+<div><pre><code> <span>hanleMoney</span><span>(</span><span>code<span>,</span> monObjArr<span>,</span> range</span><span>)</span> <span>{</span>
+      <span>if</span> <span>(</span>Object<span>.</span><span>keys</span><span>(</span>range<span>)</span><span>.</span>length <span>!==</span> <span>0</span><span>)</span> <span>{</span>
+        <span>return</span> <span>[</span><span>parseInt</span><span>(</span>range<span>.</span>min<span>)</span><span>,</span> <span>parseInt</span><span>(</span>range<span>.</span>max<span>)</span><span>]</span>
+      <span>}</span>
+      monObjArr<span>.</span><span>forEach</span><span>(</span><span>item</span> <span>=></span> <span>{</span>
+        <span>if</span> <span>(</span>item<span>.</span>code <span>===</span> code<span>)</span> <span>{</span>
+          <span>return</span> <span>[</span>item<span>.</span>min<span>,</span> item<span>.</span>max<span>]</span>
+
+        <span>}</span>
+      <span>}</span><span>)</span>
+    <span>}</span><span>,</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div></div><p>上面这段代码执行时，总是返回 undefind。</p>
+<h3 id="解决办法"> <strong>解决办法</strong></h3>
+<p>经过查找网上资料发现，forEach 方法使用 return 的作用是结束此次循环，后面的代码还是会继续执行，而且 forEach 中不能使用 break 和 contuine 关键字。</p>
+<p>正确代码如下：</p>
+<div><pre><code><span>hanleMoney</span><span>(</span><span>code<span>,</span> monObjArr<span>,</span> range</span><span>)</span> <span>{</span>
+      <span>if</span> <span>(</span>Object<span>.</span><span>keys</span><span>(</span>range<span>)</span><span>.</span>length <span>!==</span> <span>0</span><span>)</span> <span>{</span>
+        <span>return</span> <span>[</span><span>parseInt</span><span>(</span>range<span>.</span>min<span>)</span><span>,</span> <span>parseInt</span><span>(</span>range<span>.</span>max<span>)</span><span>]</span>
+      <span>}</span>
+      <span>let</span> arr
+      monObjArr<span>.</span><span>forEach</span><span>(</span><span>item</span> <span>=></span> <span>{</span>
+        <span>if</span> <span>(</span>item<span>.</span>code <span>===</span> code<span>)</span> <span>{</span>
+          arr <span>=</span> <span>[</span>item<span>.</span>min<span>,</span> item<span>.</span>max<span>]</span>
+          <span>return</span>
+        <span>}</span>
+      <span>}</span><span>)</span>
+      <span>return</span> arr
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br></div></div>]]></content:encoded>
+    </item>
+    <item>
+      <title>前端自检清单问题解答</title>
+      <link>https://xiezhenghua123.github.io/blob/article/interview/checkSelf/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/interview/checkSelf/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">前端自检清单问题解答</source>
+      <category>面经</category>
+      <pubDate>Thu, 05 Aug 2021 11:24:51 GMT</pubDate>
+      <content:encoded><![CDATA[<h2 id="一、javascript-基础"> 一、JavaScript 基础</h2>
+<blockquote>
+<p>前端工程师吃饭的家伙，深度、广度一样都不能差。</p>
+</blockquote>
+<h3 id="变量和类型"> <strong>变量和类型</strong></h3>
+<ul>
+<li><strong>1.<code>JavaScript</code>规定了几种语言类型</strong></li>
+</ul>
+<p>七种语言类型，其中包括基本数据类型六种：Number，String，Null，Undefined，Boolean，Symbol；复杂数据类型 1 种：Object（Array，function 等都是 Object 类型）</p>
+<ul>
+<li><strong>2.<code>JavaScript</code>对象的底层数据结构是什么</strong></li>
+</ul>
+<p>堆和栈</p>
+<ul>
+<li><strong>3.<code>Symbol</code>类型在实际开发中的应用、可手动实现一个简单的<code>Symbol</code></strong></li>
+</ul>
+<p>应用：</p>
+<p>① 常量使用</p>
+<p>② 区分不同的属性</p>
+<p>③ 对象的私有成员</p>
+<p>实现：</p>
+<div><pre><code><span>(</span><span>function</span><span>(</span><span>)</span> <span>{</span>
+  <span>var</span> root <span>=</span> <span>this</span><span>;</span>
+  <span>var</span> generateName <span>=</span> <span>(</span><span>function</span><span>(</span><span>)</span> <span>{</span>
+    <span>var</span> postfix <span>=</span> <span>0</span><span>;</span>
+    <span>return</span> <span>function</span><span>(</span><span>descString</span><span>)</span> <span>{</span>
+      postfix<span>++</span><span>;</span>
+      <span>return</span> <span>"@@"</span> <span>+</span> descString <span>+</span> <span>"_"</span> <span>+</span> postfix<span>;</span>
+    <span>}</span><span>;</span>
+  <span>}</span><span>)</span><span>(</span><span>)</span><span>;</span>
+  <span>var</span> <span>SymbolPolyfill</span> <span>=</span> <span>function</span> <span>Symbol</span><span>(</span><span>description</span><span>)</span> <span>{</span>
+    <span>// 实现特性第 2 点：Symbol 函数前不能使用 new 命令</span>
+    <span>if</span> <span>(</span><span>this</span> <span>instanceof</span> <span>SymbolPolyfill</span><span>)</span>
+      <span>throw</span> <span>new</span> <span>TypeError</span><span>(</span><span>"Symbol is not a constructor"</span><span>)</span><span>;</span>
+    <span>// 实现特性第 5 点：如果 Symbol 的参数是一个对象，就会调用该对象的 toString 方法，将其转为字符串，然后才生成一个 Symbol 值。</span>
+    <span>var</span> descString <span>=</span>
+      description <span>===</span> <span>undefined</span> <span>?</span> <span>undefined</span> <span>:</span> <span>String</span><span>(</span>description<span>)</span><span>;</span>
+    <span>var</span> symbol <span>=</span> Object<span>.</span><span>create</span><span>(</span><span>{</span>
+      <span>toString</span><span>:</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+        <span>return</span> <span>this</span><span>.</span>__Name__<span>;</span>
+      <span>}</span><span>,</span>
+      <span>valueOf</span><span>:</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+        <span>return</span> <span>this</span><span>;</span>
+      <span>}</span><span>,</span>
+    <span>}</span><span>)</span><span>;</span>
+    Object<span>.</span><span>defineProperties</span><span>(</span>symbol<span>,</span> <span>{</span>
+      <span>__Description__</span><span>:</span> <span>{</span>
+        <span>value</span><span>:</span> descString<span>,</span>
+        <span>writable</span><span>:</span> <span>false</span><span>,</span>
+        <span>enumerable</span><span>:</span> <span>false</span><span>,</span>
+        <span>configurable</span><span>:</span> <span>false</span><span>,</span>
+      <span>}</span><span>,</span>
+      <span>__Name__</span><span>:</span> <span>{</span>
+        <span>value</span><span>:</span> <span>generateName</span><span>(</span>descString<span>)</span><span>,</span>
+        <span>writable</span><span>:</span> <span>false</span><span>,</span>
+        <span>enumerable</span><span>:</span> <span>false</span><span>,</span>
+        <span>configurable</span><span>:</span> <span>false</span><span>,</span>
+      <span>}</span><span>,</span>
+    <span>}</span><span>)</span><span>;</span>
+    <span>// 实现特性第 6 点，因为调用该方法，返回的是一个新对象，两个对象之间，只要引用不同，就不会相同</span>
+    <span>//  Symbol 函数的参数只是表示对当前 Symbol 值的描述，相同参数的 Symbol 函数的返回值是不相等的。</span>
+    <span>return</span> symbol<span>;</span>
+  <span>}</span><span>;</span>
+  <span>var</span> forMap <span>=</span> <span>{</span><span>}</span><span>;</span>
+  Object<span>.</span><span>defineProperties</span><span>(</span>SymbolPolyfill<span>,</span> <span>{</span>
+    <span>for</span><span>:</span> <span>{</span>
+      <span>value</span><span>:</span> <span>function</span><span>(</span><span>description</span><span>)</span> <span>{</span>
+        <span>var</span> descString <span>=</span>
+          description <span>===</span> <span>undefined</span> <span>?</span> <span>undefined</span> <span>:</span> <span>String</span><span>(</span>description<span>)</span><span>;</span>
+        <span>return</span> forMap<span>[</span>descString<span>]</span>
+          <span>?</span> forMap<span>[</span>descString<span>]</span>
+          <span>:</span> <span>(</span>forMap<span>[</span>descString<span>]</span> <span>=</span> <span>SymbolPolyfill</span><span>(</span>descString<span>)</span><span>)</span><span>;</span>
+      <span>}</span><span>,</span>
+      <span>writable</span><span>:</span> <span>true</span><span>,</span>
+      <span>enumerable</span><span>:</span> <span>false</span><span>,</span>
+      <span>configurable</span><span>:</span> <span>true</span><span>,</span>
+    <span>}</span><span>,</span>
+    <span>keyFor</span><span>:</span> <span>{</span>
+      <span>value</span><span>:</span> <span>function</span><span>(</span><span>symbol</span><span>)</span> <span>{</span>
+        <span>for</span> <span>(</span><span>var</span> key <span>in</span> forMap<span>)</span> <span>{</span>
+          <span>if</span> <span>(</span>forMap<span>[</span>key<span>]</span> <span>===</span> symbol<span>)</span> <span>return</span> key<span>;</span>
+        <span>}</span>
+      <span>}</span><span>,</span>
+      <span>writable</span><span>:</span> <span>true</span><span>,</span>
+      <span>enumerable</span><span>:</span> <span>false</span><span>,</span>
+      <span>configurable</span><span>:</span> <span>true</span><span>,</span>
+    <span>}</span><span>,</span>
+  <span>}</span><span>)</span><span>;</span>
+  root<span>.</span>SymbolPolyfill <span>=</span> SymbolPolyfill<span>;</span>
+<span>}</span><span>)</span><span>(</span><span>)</span><span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br><span>59</span><br><span>60</span><br><span>61</span><br><span>62</span><br><span>63</span><br><span>64</span><br><span>65</span><br><span>66</span><br><span>67</span><br><span>68</span><br><span>69</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br><span>59</span><br><span>60</span><br><span>61</span><br><span>62</span><br><span>63</span><br><span>64</span><br><span>65</span><br><span>66</span><br><span>67</span><br><span>68</span><br><span>69</span><br></div></div><ul>
+<li><strong>4.<code>JavaScript</code>中的变量在内存中的具体存储形式</strong></li>
+</ul>
+<p>基本数据类型存储在栈中，数据内存大小确定，并由系统自动分配和自动释放。这样带来的好处就是，内存可以及时得到回收，相对于堆来说 ，更加容易管理内存空间。</p>
+<p>复杂数据类型包括内存指针和实际内存，其内存指针存储在堆中，实际内存存储在栈中，当需要使用复杂类型时，先从堆中找到内存指针，通过指针找到栈中的内存。当我们对复杂数据类型变量进行直接浅拷贝时，拷贝的只是其引用指针。</p>
+<ul>
+<li><strong>5.基本类型对应的内置对象，以及他们之间的装箱拆箱操作</strong></li>
+</ul>
+<p>基本数据类型的内置对象：Boolean，String，Number</p>
+<p>装箱：将基本数据类型转换为引用数据类型，分为隐式装箱和显示装箱</p>
+<p>隐式：每当读取一个基本类型的值时，后台会创建一个该基本类型所对应的对象。在这个基本类型上调用方法，其实是在这个基本类型对象上调用方法。这个基本类型的对象是临时的，它只存在于方法调用那一行代码执行的瞬间，执行方法后立刻被销毁。</p>
+<div><pre><code>num<span>.</span><span>toFixed</span><span>(</span><span>2</span><span>)</span><span>;</span> <span>// '123.00'</span>
+<span>//上方代码在后台的真正步骤为</span>
+<span>var</span> c <span>=</span> <span>new</span> <span>Number</span><span>(</span><span>123</span><span>)</span><span>;</span>
+c<span>.</span><span>toFixed</span><span>(</span><span>2</span><span>)</span><span>;</span>
+c <span>=</span> <span>null</span><span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div></div><p>显式：直接 new 一个内置对象</p>
+<div><pre><code><span>let</span> a <span>=</span> <span>new</span> <span>String</span><span>(</span><span>"jkj"</span><span>)</span><span>;</span>
+</code></pre>
+<div><span>1</span><br></div><div><span>1</span><br></div></div><p>拆箱：将引用数据类型转换为基本数据类型。两个方法：valueOf()，toString()</p>
+<ul>
+<li><strong>6.理解值类型和引用类型(同 4)</strong></li>
+<li><strong>7.<code>null</code>和<code>undefined</code>的区别</strong></li>
+</ul>
+<p>(1)null 表示&quot;没有对象&quot;，即该处不应该有值</p>
+<p>用法：① 作为函数的参数，表示该函数的参数不是对象。</p>
+<p>② 作为对象原型链的终点。</p>
+<p>(2)undefined 表示&quot;缺少值&quot;，就是此处应该有一个值，但是还没有定义</p>
+<p>用法：① 变量被声明了，但没有赋值时，就等于 undefined。</p>
+<p>② 调用函数时，应该提供的参数没有提供，该参数等于 undefined。</p>
+<p>③ 对象没有赋值的属性，该属性的值为 undefined。</p>
+<p>④ 函数没有返回值时，默认返回 undefined。</p>
+<ul>
+<li><strong>8.至少可以说出三种判断<code>JavaScript</code>数据类型的方式，以及他们的优缺点，如何准确的判断数组类型</strong></li>
+</ul>
+<p>（1）instanceOf:主要用于检测引用类型，检测某个实例是否属于某个对象</p>
+<p>缺点：不能检测基本数据类型</p>
+<div><pre><code>console<span>.</span><span>log</span><span>(</span><span>[</span><span>]</span> <span>instanceof</span> <span>Array</span><span>)</span><span>;</span> <span>//true</span>
+console<span>.</span><span>log</span><span>(</span><span>123</span> <span>instanceof</span> <span>Number</span><span>)</span><span>;</span> <span>//false</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>（2）typeOf():用于检测基本数据类型</p>
+<p>缺点：无法检测引用数据类型</p>
+<div><pre><code>console<span>.</span><span>log</span><span>(</span><span>typeof</span> <span>123</span><span>)</span><span>;</span> <span>//number</span>
+console<span>.</span><span>log</span><span>(</span><span>typeof</span> <span>[</span><span>]</span><span>)</span><span>;</span> <span>//Object</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>（3）Object.prototype.toString.call():可以检测任何数据类型</p>
+<p>原理：toString()方法在大部分继承 Object 对象上的都存在，只不过已经被改写了,Object 对象上的 toString 方法返回[Object type]，再通过 call 方法改变 this 指向，即可返回被检测数据的类型</p>
+<div><pre><code>console<span>.</span><span>log</span><span>(</span><span>Object</span><span>.</span>prototype<span>.</span>toString<span>)</span><span>;</span> <span>//[object Object]</span>
+console<span>.</span><span>log</span><span>(</span><span>Object</span><span>.</span>prototype<span>.</span><span>toString</span><span>.</span><span>call</span><span>(</span><span>123</span><span>)</span><span>)</span><span>;</span> <span>//[object Number]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>（4）准确的判断数组类型：Array.isArray()和 Object.prototype.toString.call()、instanceOf、constructor</p>
+<div><pre><code>console<span>.</span><span>log</span><span>(</span>a <span>instanceof</span> <span>Array</span><span>)</span><span>;</span> <span>//true</span>
+console<span>.</span><span>log</span><span>(</span>Array<span>.</span><span>isArray</span><span>(</span>a<span>)</span><span>)</span><span>;</span> <span>//true</span>
+console<span>.</span><span>log</span><span>(</span>a<span>.</span>constructor <span>===</span> Array<span>)</span><span>;</span> <span>//true</span>
+console<span>.</span><span>log</span><span>(</span><span>Object</span><span>.</span>prototype<span>.</span><span>toString</span><span>.</span><span>call</span><span>(</span>a<span>)</span><span>)</span><span>;</span> <span>//[object Array]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div></div><ul>
+<li><strong>9.可能发生隐式类型转换的场景以及转换原则，应如何避免或巧妙应用</strong></li>
+</ul>
+<p>（1）自动转换 Boolean：if (表达式){}</p>
+<p>（2）运算符</p>
+<p>在非 Numeber 类型进行数学运算符 - * / 时，会先将非 Number 转换成 Number 类型。</p>
+<p><code>+</code> 运算符要考虑字符串的情况，在操作数中存在字符串时，优先转换成字符串，
+​ <code>+</code> 运算符其中一个操作数是字符串的话，会进行连接字符串的操作。</p>
+<p><code>+</code> 运算符其中一个操作数是对象类型的话，会调用对象类型的toString方法进行转换。</p>
+<div><pre><code>console<span>.</span><span>log</span><span>(</span><span>1</span> <span>+</span> <span>null</span><span>,</span> <span>1</span> <span>+</span> <span>"12"</span><span>,</span> <span>1</span> <span>+</span> <span>undefined</span><span>,</span> <span>1</span> <span>+</span> <span>[</span><span>"12"</span><span>]</span><span>,</span> <span>1</span> <span>+</span> <span>{</span> <span>a</span><span>:</span> <span>1</span> <span>}</span><span>)</span><span>;</span> <span>//1 112 NaN 112 1[object Object]</span>
+</code></pre>
+<div><span>1</span><br></div><div><span>1</span><br></div></div><ul>
+<li><strong>10.出现小数精度丢失的原因，<code>JavaScript</code>可以存储的最大数字、最大安全数字，<code>JavaScript</code>处理大数字的方法、避免精度丢失的方法</strong></li>
+</ul>
+<p>出现小数精度丢失的原因：</p>
+<p>由于 JavaScript 采用 IEEE 754 标准，数值存储为 64 位双精度格式，数值精度最多可以达到 53 个二进制位（1 个隐藏位与 52 个有效位）。如果数值的精度超过这个限度，第 54 位及后面的位就会被丢弃，所以在相加的时候会因为小数位的限制而将二进制数字截断。（ 小数相加前会将各自转换为二进制形式 ）</p>
+<p>最大数字：Number.MAX_VALUE（1.7976931348623157e+308）</p>
+<p>最大安全数字：Number.MAX_SAFE_INTEGER（9007199254740991）</p>
+<p>解决精度丢失的方法：</p>
+<p>① 原生利用 toFixed()方法保留小数</p>
+<p>② 利用第三方库解决。比如 <a href="https://github.com/MikeMcl/bignumber.js" target="_blank" rel="noopener noreferrer">bignumber.js<i>Content not supported</i></a>，<a href="https://github.com/MikeMcl/decimal.js" target="_blank" rel="noopener noreferrer">decimal.js<i>Content not supported</i></a>，以及<a href="https://github.com/MikeMcl/big.js" target="_blank" rel="noopener noreferrer">big.js<i>Content not supported</i></a>等</p>
+<h3 id="原型和原型链"> <strong>原型和原型链</strong></h3>
+<ul>
+<li><strong>1.理解原型设计模式以及<code>JavaScript</code>中的原型规则</strong></li>
+</ul>
+<p>原型模式：是一种创建型设计模式，Prototype模式允许一个对象再创建另外一个可定制的对象，根本无需知道任何如何创建的细节,工作原理是:通过将一个原型对象传给那个要发动创建的对象，这个要发动创建的对象通过请求原型对象拷贝它们自己来实施创建。</p>
+<p>javaScript中的原型规则：</p>
+<p>①所有引用类型都有一个_ptoto_（隐式原型）属性，该属性值是一个对象。</p>
+<p>②所有函数都有一个prototype（显示原型）属性，该属性是一个对象。</p>
+<p>③所有引用类型的_proto_属性指向其构造函数的prototype属性。</p>
+<p>④当在寻找一个对象上的属性时，先从对象本身身上找，再从该对象的_proto_（即构造函数上的prototype的属性）属性上找。</p>
+<p>原型链：</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210806142237741.png" alt="image-20210806142237741"></p>
+<ul>
+<li>2.<code>instanceof</code>的底层实现原理，手动实现一个<code>instanceof</code></li>
+</ul>
+<p>原理：利用原型链来实现判断继承关系。</p>
+<p>底层代码实现：</p>
+<div><pre><code><span>function</span> <span>myInstanceOf</span><span>(</span><span><span>L</span><span>,</span> <span>R</span></span><span>)</span> <span>{</span>
+  <span>const</span> <span>O</span> <span>=</span> <span>R</span><span>.</span>prototype<span>;</span>
+  <span>L</span> <span>=</span> <span>L</span><span>.</span>__proto__<span>;</span>
+  <span>while</span> <span>(</span><span>1</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span><span>L</span> <span>===</span> <span>null</span><span>)</span> <span>return</span> <span>false</span><span>;</span>
+    <span>if</span> <span>(</span><span>L</span> <span>===</span> <span>O</span><span>)</span> <span>return</span> <span>true</span><span>;</span>
+    <span>L</span> <span>=</span> <span>L</span><span>.</span>__proto__<span>;</span>
+  <span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br></div></div><ul>
+<li>4.实现继承的几种方式以及他们的优缺点</li>
+</ul>
+<p>（1）原型链继承：利用原型链的指向实现</p>
+<div><pre><code><span>function</span> <span>person</span><span>(</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>name <span>=</span> <span>"111"</span><span>;</span>
+<span>}</span>
+<span>function</span> <span>xie</span><span>(</span><span>)</span> <span>{</span><span>}</span>
+<span>let</span> a <span>=</span> <span>new</span> <span>person</span><span>(</span><span>)</span><span>;</span>
+xie<span>.</span>prototype <span>=</span> a<span>;</span>
+
+console<span>.</span><span>log</span><span>(</span>person<span>.</span>prototype <span>==</span> xie<span>.</span>prototype<span>.</span>__proto__<span>)</span><span>;</span> <span>//true</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br></div></div><p>缺点：①原型中的包含所有引用值会被所有实例间共享；</p>
+<p>②子类实例化的时候不能给父类构造函数传参</p>
+<p>（2）构造函数继承：利用call或者apply方法在子类构造函数中调用父类构造函数（改变this指向）</p>
+<div><pre><code><span>function</span> <span>person</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>age <span>=</span> age<span>;</span>
+  <span>this</span><span>.</span>name <span>=</span> <span>"111"</span><span>;</span>
+<span>}</span>
+<span>function</span> <span>xie</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>person</span><span>.</span><span>call</span><span>(</span><span>this</span><span>,</span> age<span>)</span><span>;</span>
+<span>}</span>
+<span>let</span> b <span>=</span> <span>new</span> <span>xie</span><span>(</span><span>112</span><span>)</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>b<span>.</span>name<span>)</span><span>;</span> <span>//111</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br></div></div><p>缺点：不能使用父类原型上的方法。</p>
+<p>（3）组合继承：结合原型链继承和构造函数继承，使用比较多</p>
+<div><pre><code><span>function</span> <span>person</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>age <span>=</span> age<span>;</span>
+  <span>this</span><span>.</span>name <span>=</span> <span>"111"</span><span>;</span>
+<span>}</span>
+person<span>.</span>prototype<span>.</span><span>med</span> <span>=</span> <span>function</span> <span>(</span><span>)</span> <span>{</span>
+  console<span>.</span><span>log</span><span>(</span><span>111</span><span>)</span><span>;</span>
+<span>}</span><span>;</span>
+<span>function</span> <span>xie</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>person</span><span>.</span><span>call</span><span>(</span><span>this</span><span>,</span> age<span>)</span><span>;</span>
+  <span>this</span><span>.</span>age <span>=</span> <span>115</span><span>;</span>
+<span>}</span>
+xie<span>.</span>prototype <span>=</span> <span>new</span> <span>person</span><span>(</span><span>)</span><span>;</span>
+<span>let</span> b <span>=</span> <span>new</span> <span>xie</span><span>(</span><span>112</span><span>)</span><span>;</span>
+b<span>.</span><span>med</span><span>(</span><span>)</span><span>;</span>  <span>//111</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div></div><p>缺点：父类构造函数会被调用两次（一次在子类构造函数，一次在原型指向）</p>
+<p>（4）寄生式继承：创建一个实现继承的函数，以某种方式增强对象，并返回这个对象。</p>
+<div><pre><code><span>function</span> <span>create</span><span>(</span><span>obj</span><span>)</span> <span>{</span>
+  <span>let</span> clone <span>=</span> <span>Object</span><span>(</span>obj<span>)</span><span>;</span>
+  clone<span>.</span><span>sayhi</span> <span>=</span> <span>function</span> <span>(</span><span>)</span> <span>{</span>
+    console<span>.</span><span>log</span><span>(</span><span>"222"</span><span>)</span><span>;</span>
+  <span>}</span><span>;</span>
+  <span>return</span> clone<span>;</span>
+<span>}</span>
+<span>let</span> person <span>=</span> <span>{</span>
+  <span>name</span><span>:</span> <span>333</span><span>,</span>
+<span>}</span><span>;</span>
+<span>let</span> another <span>=</span> <span>create</span><span>(</span>person<span>)</span><span>;</span>
+another<span>.</span><span>sayhi</span><span>(</span><span>)</span><span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div></div><p>缺点：和构造函数继承的缺点一样</p>
+<p>（5）寄生组合继承：结合组合继承和寄生继承，去除组合继承调用两次父类构造函数的缺点</p>
+<div><pre><code><span>function</span> <span>person</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>age <span>=</span> age<span>;</span>
+  <span>this</span><span>.</span>name <span>=</span> <span>"111"</span><span>;</span>
+<span>}</span>
+person<span>.</span>prototype<span>.</span><span>med</span> <span>=</span> <span>function</span> <span>(</span><span>)</span> <span>{</span>
+  console<span>.</span><span>log</span><span>(</span><span>111</span><span>)</span><span>;</span>
+<span>}</span><span>;</span>
+<span>function</span> <span>person</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>age <span>=</span> age<span>;</span>
+  <span>this</span><span>.</span>name <span>=</span> <span>"111"</span><span>;</span>
+<span>}</span>
+person<span>.</span>prototype<span>.</span><span>med</span> <span>=</span> <span>function</span> <span>(</span><span>)</span> <span>{</span>
+  console<span>.</span><span>log</span><span>(</span><span>111</span><span>)</span><span>;</span>
+<span>}</span><span>;</span>
+<span>function</span> <span>inheritPrototype</span><span>(</span><span>subType<span>,</span> superType</span><span>)</span> <span>{</span>
+  <span>let</span> prototype <span>=</span> <span>Object</span><span>(</span>superType<span>.</span>prototype<span>)</span><span>;</span> <span>//创建对象</span>
+  prototype<span>.</span>constructor <span>=</span> subType<span>;</span> <span>//增强对象</span>
+  subType<span>.</span>prototype <span>=</span> prototype<span>;</span> <span>//赋值对象</span>
+<span>}</span>
+<span>function</span> <span>xie</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>person</span><span>.</span><span>call</span><span>(</span><span>this</span><span>,</span> age<span>)</span><span>;</span>
+  <span>this</span><span>.</span>age <span>=</span> <span>115</span><span>;</span>
+<span>}</span>
+<span>inheritPrototype</span><span>(</span>xie<span>,</span> person<span>)</span><span>;</span> <span>//这一步节省调用父类构造函数</span>
+<span>let</span> c <span>=</span> <span>new</span> <span>xie</span><span>(</span><span>)</span><span>;</span>
+c<span>.</span><span>med</span><span>(</span><span>)</span><span>;</span> <span>//111</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br></div></div><p>（6）class关键字：extends单继承，super()方法向父类传递参数。最好用</p>
+<ul>
+<li>5.可以描述<code>new</code>一个对象的详细过程，手动实现一个<code>new</code>操作符</li>
+</ul>
+<div><pre><code><span>function</span> <span>myNew</span><span>(</span><span>con<span>,</span> <span>...</span>rest</span><span>)</span> <span>{</span>
+  <span>let</span> obj <span>=</span> <span>{</span><span>}</span><span>;</span>
+  obj<span>.</span>__proto__ <span>=</span> con<span>.</span>prototype<span>;</span>
+  <span>let</span> result <span>=</span> <span>con</span><span>.</span><span>apply</span><span>(</span>obj<span>,</span> rest<span>)</span><span>;</span>
+  <span>return</span> result <span>instanceof</span> <span>Object</span> <span>?</span> result <span>:</span> obj<span>;</span>
+<span>}</span>
+
+<span>function</span> <span>person</span><span>(</span><span>age</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>age <span>=</span> age<span>;</span>
+<span>}</span>
+<span>let</span> xie1 <span>=</span> <span>new</span> <span>person</span><span>(</span><span>113</span><span>)</span><span>;</span>
+<span>let</span> xie <span>=</span> <span>myNew</span><span>(</span>person<span>,</span> <span>112</span><span>)</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>xie<span>)</span><span>;</span>  <span>//person { age: 112 }</span>
+console<span>.</span><span>log</span><span>(</span>xie1<span>)</span><span>;</span><span>// person { age: 113 }</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div></div><h3 id="作用域和闭包"> 作用域和闭包</h3>
+<ul>
+<li><strong>1.理解词法作用域和动态作用域</strong></li>
+</ul>
+<p>词法作用域：代码编译时候的作用域</p>
+<p>动态作用域：代码运行时候的作用域</p>
+<ul>
+<li><strong>2.理解<code>JavaScript</code>的作用域和作用域链</strong></li>
+</ul>
+<p>作用域（词法作用域）：全局作用域、函数作用域、块级作用域</p>
+<p>作用域链：代码执行时，会寻找变量和函数的标识符，会沿作用域链逐级寻找。寻找路径：目前的上下文—&gt;寻找上一级的上下文—&gt;.....全局上下文。这就是作用域链</p>
+<ul>
+<li><strong>3.理解<code>JavaScript</code>的执行上下文栈，可以应用堆栈信息快速定位问题</strong></li>
+</ul>
+<p>执行上下文：当前JavaScript代码被解析和执行时所在环境的抽象概念，JavaScript中运行任何的代码都是在执行上下文中运行。</p>
+<ul>
+<li><strong>4.<code>this</code>在几种不同使用场景的取值</strong></li>
+</ul>
+<p>①全局作用域下this指向window（node环境下指向{}，和global无关）</p>
+<p>②函数作用域下，this指向调用这个函数的上下文对象</p>
+<p>③在对象中，this指向该对象本身</p>
+<p>④调用构造函数，this指向构造函数实例化后的新对象</p>
+<p>⑤apply、bind和call调用时，this指向参数中的对象</p>
+<p>⑥匿名函数（函数表达式）调用，指向的是全局对象（只能是window，node环境下是undefined）</p>
+<ul>
+<li><strong>5.闭包的实现原理和作用，可以列举几个开发中闭包的实际应用</strong></li>
+</ul>
+<p>闭包的实现原理：利用作用域链，在一个函数中引用另一个函数的变量，通常是嵌套函数</p>
+<p>作用：使用函数内部的变量</p>
+<p>应用：①防抖、节流</p>
+<div><pre><code> <span>/*防抖*/</span>
+ <span>function</span> <span>debounce</span><span>(</span><span>fn</span><span>)</span> <span>{</span>
+            <span>let</span> da <span>=</span> <span>null</span><span>;</span>
+            <span>return</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+                <span>clearTimeout</span><span>(</span>da<span>)</span><span>;</span>
+                da <span>=</span> <span>setTimeout</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span>
+                    <span>fn</span><span>.</span><span>call</span><span>(</span><span>this</span><span>,</span> arguments<span>)</span> 
+                <span>}</span><span>,</span> <span>1000</span><span>)</span><span>;</span>
+                
+            <span>}</span>
+        <span>}</span>
+<span>/*节流*/</span>
+ <span>function</span> <span>throttle</span><span>(</span><span>fn</span><span>)</span> <span>{</span>
+            <span>// 4、通过闭包保存一个标记</span>
+            <span>let</span> canRun <span>=</span> <span>true</span><span>;</span>
+            <span>return</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+                <span>// 5、在函数开头判断标志是否为 true，不为 true 则中断函数</span>
+                <span>if</span> <span>(</span><span>!</span>canRun<span>)</span> <span>{</span>
+                    <span>return</span><span>;</span>
+                <span>}</span>
+                <span>// 6、将 canRun 设置为 false，防止执行之前再被执行</span>
+                canRun <span>=</span> <span>false</span><span>;</span>
+                <span>// 7、定时器</span>
+                <span>setTimeout</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span>
+                    <span>fn</span><span>.</span><span>call</span><span>(</span><span>this</span><span>,</span> arguments<span>)</span><span>;</span>
+                    <span>// 8、执行完事件（比如调用完接口）之后，重新将这个标志设置为 true</span>
+                    canRun <span>=</span> <span>true</span><span>;</span>
+                <span>}</span><span>,</span> <span>1000</span><span>)</span><span>;</span>
+            <span>}</span><span>;</span>
+        <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br></div></div><p>②函数柯里化：实现参数复用</p>
+<div><pre><code><span>function</span> <span>a</span><span>(</span><span>)</span> <span>{</span>
+  <span>let</span> text <span>=</span> <span>1</span>
+  <span>return</span> <span>function</span> <span>b</span><span>(</span><span>name</span><span>)</span> <span>{</span>
+    console<span>.</span><span>log</span><span>(</span>text<span>,</span> name<span>)</span>
+  <span>}</span>
+<span>}</span>
+<span>a</span><span>(</span><span>)</span><span>(</span><span>2</span><span>)</span> <span>//1 2</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div></div><ul>
+<li><strong>6.理解堆栈溢出和内存泄漏的原理，如何防止</strong></li>
+</ul>
+<p>栈堆溢出：栈堆调用次数超量（一般存在于递归操作）</p>
+<p>内存泄漏：程序被分配的栈内有一块内存既不能使用，也不能被回收（一般存在于闭包、全局变量中）</p>
+<p>解决办法：①对使用完的对象置为null</p>
+<p>②合理使用闭包，不过多使用</p>
+<ul>
+<li><strong>7.如何处理循环的异步操作</strong></li>
+</ul>
+<p>利用异步函数：async和await</p>
+<ul>
+<li><strong>8.理解模块化解决的实际问题，可列举几个模块化方案并理解其中原理</strong></li>
+</ul>
+<p>（1）commonJS：只能在服务端使用</p>
+<p>定义模块：module.exports=对象；加载：require()</p>
+<p>（2）AMD：服务端和浏览器端均可使用，推崇依赖前置（在定义模块的时候就要声明其依赖的模块）</p>
+<p>定义模块：define(id,dependencies,factory)</p>
+<ul>
+<li>——id 可选参数，用来定义模块的标识，如果没有提供该参数，脚本文件名（去掉拓展名）</li>
+<li>——dependencies 是一个当前模块用来的模块名称数组</li>
+<li>——factory 工厂方法，模块初始化要执行的函数或对象，如果为函数，它应该只被执行一次，如果是对象，此对象应该为模块的输出值。</li>
+</ul>
+<p>加载：require([dependencies], <code>function</code>(){});</p>
+<ul>
+<li>——第一个参数是一个数组，表示所依赖的模块；</li>
+<li>——第二个参数是一个回调函数，当前面指定的模块都加载成功后，它将被调用。加载的模块会以参数形式传入该函数，从而在回调函数内部就可以使用这些模块</li>
+</ul>
+<p>（3）CMD：服务端和浏览器端均可使用，推崇依赖就近（<strong>只有在用到某个模块的时候再去require——按需加载</strong>）</p>
+<p>定义模块：define(<strong>function</strong>(require,exports,module){}）</p>
+<p>加载：利用sea.js的use方法</p>
+<p>（4）es6模块化</p>
+<p>定义模块：①export default 默认导出  ②export {}后面只能跟对象</p>
+<p>加载：import '...' from '...'。第二种导出方法，引入时必须的形式：import {...} from '...'</p>
+<h3 id="执行机制"> 执行机制</h3>
+<ul>
+<li><strong>1.为何<code>try</code>里面放<code>return</code>，<code>finally</code>还会执行，理解其内部机制</strong></li>
+</ul>
+<p>先执行try里面的语句，如果try里面抛出异常，就执行catch里面的语句，finally里面的语句最终都会执行</p>
+<ul>
+<li><strong>2.<code>JavaScript</code>如何实现异步编程，可以详细描述<code>EventLoop</code>机制</strong></li>
+</ul>
+<p>异步编程实现：</p>
+<p>①回调函数。容易导致回调地狱</p>
+<p>②利用promise实现异步。无法取消改变状态</p>
+<p>③生成器Generators/ yield。可以利用yield控制函数的执行</p>
+<p>④利用异步函数async/await（基于promise和生成器实现）。非常好用</p>
+<p><code>EventLoop</code>机制：javascript是单线程，执行任务分为同步任务和异步任务，异步任务又分为宏任务和微任务。</p>
+<p>执行顺序：同步任务—&gt;微任务—&gt;宏任务</p>
+<ul>
+<li><strong>3.宏任务和微任务分别有哪些</strong></li>
+</ul>
+<p>宏任务：script(整体代码), setTimeout, setInterval, setImmediate（非标准，减少使用）, I/O, UI rendering。</p>
+<p>微任务：promise（本身同步）、 Object.observe（观察对象变化，实现数据监听）、 MutationObserver（观察dom变化）</p>
+<ul>
+<li><strong>4.可以快速分析一个复杂的异步嵌套逻辑，并掌握分析方法</strong></li>
+<li><strong>5.使用<code>Promise</code>实现串行</strong></li>
+</ul>
+<p>①利用reduce</p>
+<div><pre><code><span>const</span> <span>serialPromises</span> <span>=</span> <span>function</span> <span>(</span><span>promises</span><span>)</span> <span>{</span>
+  promises<span>.</span><span>reduce</span><span>(</span><span>(</span><span>prev<span>,</span> next</span><span>)</span> <span>=></span> prev<span>.</span><span>then</span><span>(</span><span>(</span><span>preVal</span><span>)</span> <span>=></span> <span>next</span><span>(</span>preVal<span>)</span><span>)</span><span>,</span> Promise<span>.</span><span>resolve</span><span>(</span><span>)</span><span>)</span><span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>②利用async/await</p>
+<ul>
+<li><strong>6.<code>Node</code>与浏览器<code>EventLoop</code>的差异</strong></li>
+<li><strong>7.如何在保证页面运行流畅的情况下处理海量数据</strong></li>
+</ul>
+<h3 id="语法和-api"> 语法和 API</h3>
+<ul>
+<li><strong>1.理解<code>ECMAScript</code>和<code>JavaScript</code>的关系</strong></li>
+</ul>
+<p><code>ECMAScript</code>是<code>JavaScript</code>的一部分，是执行标准。</p>
+<ul>
+<li><strong>2.熟练运用<code>es5</code>、<code>es6</code>提供的语法规范，</strong></li>
+<li><strong>3.熟练掌握<code>JavaScript</code>提供的全局对象（例如<code>Date</code>、<code>Math</code>）、全局函数（例如<code>decodeURI</code>、<code>isNaN</code>）、全局属性（例如<code>Infinity</code>、<code>undefined</code>）</strong></li>
+<li><strong>4.熟练应用<code>map</code>、<code>reduce</code>、<code>filter</code> 等高阶函数解决问题</strong></li>
+<li><strong>5.<code>setInterval</code>需要注意的点，使用<code>settimeout</code>实现<code>setInterval</code></strong></li>
+<li><strong>6.<code>JavaScript</code>提供的正则表达式<code>API</code>、可以使用正则表达式（邮箱校验、<code>URL</code>解析、去重等）解决常见问题</strong></li>
+<li><strong>7.<code>JavaScript</code>异常处理的方式，统一的异常处理方案</strong></li>
+</ul>
+<p>利用try、catch、finally</p>
+<h2 id="二、html-和-css"> 二、HTML 和 CSS</h2>
+<h3 id="html"> HTML</h3>
+<ul>
+<li><strong>1.从规范的角度理解<code>HTML</code>，从分类和语义的角度使用标签</strong></li>
+<li><strong>2.常用页面标签的默认样式、自带属性、不同浏览器的差异、处理浏览器兼容问题的方式</strong></li>
+<li><strong>3.元信息类标签(<code>head</code>、<code>title</code>、<code>meta</code>)的使用目的和配置方法</strong></li>
+<li><strong>4.<code>HTML5</code>离线缓存原理</strong></li>
+</ul>
+<p>使用：头部加上<!DOCTYPE HTML> <html manifest = "cache.manifest"> ... </html></p>
+<p>cache.manifest文件构成：</p>
+<p>（1）CACHE:表示需要离线存储的资源列表，由于包含manifest文件的页面将被自动离线存储，所以不需要把页面自身也列出来。</p>
+<p>（2）NETWORK:表示在它下面列出来的资源只有在在线的情况下才能访问，他们不会被离线存储，所以在离线情况下无法使用这些资源。不过，如果在CACHE和NETWORK中有一个相同的资源，那么这个资源还是会被离线存储，也就是说CACHE的优先级更高。</p>
+<p>（3）FALLBACK:表示如果访问第一个资源失败，那么就使用第二个资源来替换他，比如上面这个文件表示的就是如果访问根目录下任何一个资源失败了，那么就去访问offline.html。</p>
+<ul>
+<li><strong>5.可以使用<code>Canvas API</code>、<code>SVG</code>等绘制高性能的动画</strong></li>
+</ul>
+<h3 id="css"> CSS</h3>
+<ul>
+<li><strong>1.<code>CSS</code>盒模型，在不同浏览器的差异</strong></li>
+</ul>
+<p>标准盒模型：box-sizing:content-box(盒子的宽和高不包括不包括pading和border)</p>
+<p>ie盒模型：box-sizing:border-box(盒子的宽和高不包括不包括pading和border)</p>
+<ul>
+<li><strong>2.<code>CSS</code>所有选择器及其优先级、使用场景，哪些可以继承，如何运用<code>at</code>规则</strong></li>
+</ul>
+<p>at（@）规则：</p>
+<div><pre><code><span>/*定义字符集*/</span>
+@charset <span>"utf-8"</span>
+<span>/*导入css文件*/</span>
+@import <span>"base.css"</span>
+<span>/*自定义字体*/</span>
+<span><span>@font-face</span></span> <span>{</span><span>}</span>
+<span>/*声明CSS3 animation动画关键帧*/</span>
+<span><span>@keyframes</span> fadeIn</span> <span>{</span><span>}</span>
+<span>/*媒体查询*/</span>
+<span><span>@media</span></span><span>{</span><span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br></div></div><ul>
+<li><strong>3.<code>CSS</code>伪类和伪元素有哪些，它们的区别和实际应用</strong></li>
+</ul>
+<p>伪元素：::after、::before、::first-line、::first-letter等</p>
+<p>伪类：:hover、:first-child、:last-child、:link、focus、:visited等</p>
+<ul>
+<li><strong>4.<code>HTML</code>文档流的排版规则，<code>CSS</code>几种定位的规则、定位参照物、对文档流的影响，如何选择最好的定位方式，雪碧图实现原理</strong></li>
+</ul>
+<p>雪碧图(精灵图)：<strong>CSS Sprites</strong>，利用对应的<code>background-position</code>来展现不同位置的图标。</p>
+<ul>
+<li><strong>5.水平垂直居中的方案、可以实现<code>6</code>种以上并对比它们的优缺点</strong></li>
+</ul>
+<p><strong>已知宽高</strong></p>
+<p>①利用定位</p>
+<div><pre><code><span>.parent</span> <span>{</span>
+      <span>position</span><span>:</span> relative<span>;</span>
+      <span>background-color</span><span>:</span> black<span>;</span>
+      <span>width</span><span>:</span> 500px<span>;</span>
+      <span>height</span><span>:</span> 500px<span>;</span>
+    <span>}</span>
+    <span>.child</span> <span>{</span>
+      <span>position</span><span>:</span> absolute<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>left</span><span>:</span> 0<span>;</span>
+      <span>right</span><span>:</span> 0<span>;</span>
+      <span>top</span><span>:</span> 0<span>;</span>
+      <span>bottom</span><span>:</span> 0<span>;</span>
+      <span>margin</span><span>:</span> auto<span>;</span>
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br></div></div><p>②利用定位和边距</p>
+<div><pre><code>    <span>.parent</span> <span>{</span>
+      <span>position</span><span>:</span> relative<span>;</span>
+      <span>background-color</span><span>:</span> black<span>;</span>
+      <span>width</span><span>:</span> 500px<span>;</span>
+      <span>height</span><span>:</span> 500px<span>;</span>
+    <span>}</span>
+    <span>.child</span> <span>{</span>
+      <span>position</span><span>:</span> absolute<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>left</span><span>:</span> 50%<span>;</span>
+      <span>top</span><span>:</span> 50%<span>;</span>
+      <span>margin</span><span>:</span> -100px 0 0 -100px<span>;</span>
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div></div><p><strong>未知宽高</strong></p>
+<p>①利用定位和2D平移</p>
+<div><pre><code><span>.parent</span> <span>{</span>
+      <span>position</span><span>:</span> relative<span>;</span>
+      <span>background-color</span><span>:</span> black<span>;</span>
+      <span>width</span><span>:</span> 500px<span>;</span>
+      <span>height</span><span>:</span> 500px<span>;</span>
+    <span>}</span>
+    <span>.child</span> <span>{</span>
+      <span>position</span><span>:</span> absolute<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>left</span><span>:</span> 50%<span>;</span>
+      <span>top</span><span>:</span> 50%<span>;</span>
+      <span>transform</span><span>:</span> <span>translate</span><span>(</span>-50%<span>,</span> -50%<span>)</span><span>;</span>
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div></div><p>②flex布局</p>
+<div><pre><code><span>.parent</span> <span>{</span>
+      <span>display</span><span>:</span> flex<span>;</span>
+      <span>align-items</span><span>:</span> center<span>;</span>
+      <span>justify-content</span><span>:</span> center<span>;</span>
+      <span>background-color</span><span>:</span> black<span>;</span>
+      <span>width</span><span>:</span> 500px<span>;</span>
+      <span>height</span><span>:</span> 500px<span>;</span>
+    <span>}</span>
+    <span>.child</span> <span>{</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div></div><p>③网格布局</p>
+<div><pre><code><span>.parent</span> <span>{</span>
+      <span>display</span><span>:</span> grid<span>;</span>
+      <span>background-color</span><span>:</span> black<span>;</span>
+      <span>width</span><span>:</span> 500px<span>;</span>
+      <span>height</span><span>:</span> 500px<span>;</span>
+    <span>}</span>
+    <span>.child</span> <span>{</span>
+      <span>align-self</span><span>:</span> center<span>;</span>
+      <span>justify-self</span><span>:</span> center<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br></div></div><p>④文字水平居中（需要知道高度）</p>
+<div><pre><code><span>.div</span> <span>{</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>text-align</span><span>:</span> center<span>;</span>
+      <span>line-height</span><span>:</span> 200px<span>;</span>css
+      <span>background-color</span><span>:</span> blanchedalmond<span>;</span>
+    <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div></div><ul>
+<li><strong>6.<code>BFC</code>实现原理，可以解决的问题，如何创建<code>BFC</code></strong></li>
+</ul>
+<p>BFC：块级格式化上下文。BFC中的内容不会影响到外面的盒子</p>
+<p>如何创建：</p>
+<p>①body 根元素
+②浮动元素：float 除 none 以外的值
+③绝对定位元素：position (absolute、fixed)
+④display 为 inline-block、table-cells、flex
+⑤overflow 除了 visible 以外的值 (hidden、auto、scroll)</p>
+<p>应用：</p>
+<p>①解决外边距塌陷</p>
+<p>② BFC 可以包含浮动的元素（清除浮动）</p>
+<p>③BFC 可以阻止元素被浮动元素覆盖</p>
+<ul>
+<li><strong>7.可使用<code>CSS</code>函数复用代码，实现特殊效果</strong></li>
+<li><strong>8.<code>PostCSS</code>、<code>Sass</code>、<code>Less</code>的异同，以及使用配置，至少掌握一种</strong></li>
+<li><strong>9.<code>CSS</code>模块化方案、如何配置按需加载、如何防止<code>CSS</code>阻塞渲染</strong></li>
+</ul>
+<p>scoped</p>
+<ul>
+<li><strong>10.熟练使用<code>CSS</code>实现常见动画，如渐变、移动、旋转、缩放等等</strong></li>
+<li><strong>11.<code>CSS</code>浏览器兼容性写法，了解不同<code>API</code>在不同浏览器下的兼容性情况</strong></li>
+<li><strong>12.掌握一套完整的响应式布局方案</strong></li>
+</ul>
+<h3 id="手写"> 手写</h3>
+<ul>
+<li>1.<strong>手写图片瀑布流效果</strong></li>
+</ul>
+<p>利用flex布局</p>
+<div><pre><code><span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>masonry<span>"</span></span><span>></span></span>
+    <span>&lt;!-- 第一列 --></span>
+    <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>column<span>"</span></span><span>></span></span>
+        <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>item<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+        <span>&lt;!-- more items--></span>
+    <span><span><span>&lt;/</span>div</span><span>></span></span>
+    <span>&lt;!-- 第二列 --></span>
+    <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>column<span>"</span></span><span>></span></span>
+        <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>item<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+        <span>&lt;!-- more items--></span>
+    <span><span><span>&lt;/</span>div</span><span>></span></span>
+    <span>&lt;!-- 第三列 --></span>
+    <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>column<span>"</span></span><span>></span></span>
+        <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>item<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+        <span>&lt;!-- more items--></span>
+    <span><span><span>&lt;/</span>div</span><span>></span></span>
+<span><span><span>&lt;/</span>div</span><span>></span></span>
+<span><span><span>&lt;</span>style</span><span>></span></span><span><span>
+<span>.masonry</span> <span>{</span>
+    <span>display</span><span>:</span> flex<span>;</span> // 设置为Flex容器
+    <span>flex-direction</span><span>:</span> row<span>;</span> // 主轴方向设置为水平方向
+<span>}</span>
+
+<span>.column</span> <span>{</span>
+    <span>display</span><span>:</span> flex<span>;</span> // 设置为Flex容器
+    <span>flex-direction</span><span>:</span> column<span>;</span> // 主轴方向设置为垂直方向
+<span>}</span>
+</span></span><span><span><span>&lt;/</span>style</span><span>></span></span>
+<span><span><span>&lt;</span>javascript</span><span>></span></span>
+    
+    /*伪代码
+    可以利用原生js动态创建img节点添加到相应的dom节点下
+    */
+    
+    let data1 = [], //第一列
+    data2 = [], //第二列
+    data3 = [], //第三列
+    i = 0;
+while (i &lt; data.length) {
+    data1.push(data[i++]);
+    if (i &lt; data.length) {
+        data2.push(data[i++]);
+    }
+    if (i &lt; data.length) {
+        data3.push(data[i++]);
+    }
+}
+return {
+    //第一列
+    data1,
+    //第二列
+    data2,
+    //第三列
+    data3
+};
+
+<span><span><span>&lt;/</span>javascript</span><span>></span></span>
+
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br><span>57</span><br><span>58</span><br></div></div><ul>
+<li><strong>2.使用<code>CSS</code>绘制几何图形（圆形、三角形、扇形、菱形等）</strong></li>
+</ul>
+<p>①圆形：</p>
+<div><pre><code>width：100px<span>;</span>
+<span>height</span><span>:</span>100px<span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>②三角形：</p>
+<div><pre><code> <span><span><span>&lt;</span>style</span><span>></span></span><span><span>
+      <span>.triangle1-wrap</span> <span>{</span>
+        <span>width</span><span>:</span> 50px<span>;</span>
+        <span>height</span><span>:</span> 50px<span>;</span>
+        <span>overflow</span><span>:</span> hidden<span>;</span>
+      <span>}</span>
+      <span>.triangle1</span> <span>{</span>
+        <span>width</span><span>:</span> 50px<span>;</span>
+        <span>height</span><span>:</span> 50px<span>;</span>
+        <span>background-color</span><span>:</span> red<span>;</span>
+        <span>transform</span><span>:</span> <span>rotateZ</span><span>(</span>45deg<span>)</span><span>;</span>
+        <span>margin-top</span><span>:</span> 35px<span>;</span>
+      <span>}</span>
+    </span></span><span><span><span>&lt;/</span>style</span><span>></span></span>
+    <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>triangle1-wrap<span>"</span></span><span>></span></span>
+      <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>triangle1<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+    <span><span><span>&lt;/</span>div</span><span>></span></span>
+
+//利用border
+ <span><span><span>&lt;</span>style</span><span>></span></span><span><span>
+ <span>.triangle2</span><span>{</span>
+        <span>width</span><span>:</span>0px<span>;</span>
+        <span>height</span><span>:</span>0px<span>;</span>
+        <span>border-top</span><span>:</span>solid 50px red<span>;</span>
+        <span>border-bottom</span><span>:</span>solid 50px transparent<span>;</span>
+        <span>border-left</span><span>:</span>solid 50px transparent<span>;</span>
+        <span>border-right</span><span>:</span>solid 50px transparent<span>;</span>
+    <span>}</span>
+</span></span><span><span><span>&lt;/</span>style</span><span>></span></span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br></div></div><p>③扇形</p>
+<div><pre><code> <span><span><span>&lt;</span>style</span><span>></span></span><span><span>
+<span>.pie</span> <span>{</span>
+	<span>position</span><span>:</span> relative<span>;</span>
+	<span>margin</span><span>:</span> 1em auto<span>;</span>
+	<span>padding</span><span>:</span> 0<span>;</span>
+	<span>width</span><span>:</span> 32em<span>;</span>
+  <span>height</span><span>:</span> 32em<span>;</span>
+	<span>border-radius</span><span>:</span> 50%<span>;</span>
+	<span>list-style</span><span>:</span> none<span>;</span>
+  <span>overflow</span><span>:</span> hidden<span>;</span>
+<span>}</span>
+<span>.slice</span> <span>{</span>
+	<span>overflow</span><span>:</span> hidden<span>;</span>
+	<span>position</span><span>:</span> absolute<span>;</span>
+	<span>top</span><span>:</span> 0<span>;</span> 
+  <span>right</span><span>:</span> 0<span>;</span>
+	<span>width</span><span>:</span> 50%<span>;</span>
+  <span>height</span><span>:</span> 50%<span>;</span>
+	<span>transform-origin</span><span>:</span> 0% 100%<span>;</span> //变形定位原点
+<span>}</span>
+<span>.slice-one</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>30deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> black<span>;</span>
+<span>}</span>
+<span>.slice-two</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>-30deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> yellow<span>;</span>
+<span>}</span>
+<span>.slice-three</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>-90deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> black<span>;</span>
+<span>}</span>
+<span>.slice-four</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>-150deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> yellow<span>;</span>
+<span>}</span>
+<span>.slice-five</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>-210deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> black<span>;</span>
+<span>}</span>
+<span>.slice-six</span> <span>{</span>
+  <span>transform</span><span>:</span> <span>rotate</span><span>(</span>-270deg<span>)</span> <span>skewY</span><span>(</span>-30deg<span>)</span><span>;</span>
+  <span>background</span><span>:</span> yellow<span>;</span>
+<span>}</span>
+ 
+  </span></span><span><span><span>&lt;/</span>style</span><span>></span></span>
+ 
+<span><span><span>&lt;</span>ul</span> <span>class</span><span><span>=</span><span>'</span>pie<span>'</span></span><span>></span></span>
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-one slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span> 
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-two slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span>
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-three slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span>
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-four slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span>
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-five slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span>
+    <span><span><span>&lt;</span>li</span> <span>class</span><span><span>=</span><span>'</span>slice-six slice<span>'</span></span><span>></span></span> <span><span><span>&lt;/</span>li</span><span>></span></span>
+  <span><span><span>&lt;</span>ul</span><span>></span></span>
+// skew()进行拉伸
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br><span>50</span><br><span>51</span><br><span>52</span><br><span>53</span><br><span>54</span><br><span>55</span><br><span>56</span><br></div></div><p>④菱形</p>
+<div><pre><code>利用transform: skew()和transform-origin: 0% 100%; 
+</code></pre>
+<div><span>1</span><br></div><div><span>1</span><br></div></div><ul>
+<li><strong>3.使用纯<code>CSS</code>实现曲线运动（贝塞尔曲线）</strong></li>
+<li><strong>4.实现常用布局（三栏、圣杯、双飞翼、吸顶），可是说出多种方式并理解其优缺点</strong></li>
+</ul>
+<p>①三栏布局</p>
+<div><pre><code><span><span>&lt;!</span><span>DOCTYPE</span> <span>html</span><span>></span></span>
+<span><span><span>&lt;</span>html</span> <span>lang</span><span><span>=</span><span>"</span>en<span>"</span></span><span>></span></span>
+  <span><span><span>&lt;</span>head</span><span>></span></span>
+    <span><span><span>&lt;</span>meta</span> <span>charset</span><span><span>=</span><span>"</span>UTF-8<span>"</span></span> <span>/></span></span>
+    <span><span><span>&lt;</span>meta</span> <span>http-equiv</span><span><span>=</span><span>"</span>X-UA-Compatible<span>"</span></span> <span>content</span><span><span>=</span><span>"</span>IE=edge<span>"</span></span> <span>/></span></span>
+    <span><span><span>&lt;</span>meta</span> <span>name</span><span><span>=</span><span>"</span>viewport<span>"</span></span> <span>content</span><span><span>=</span><span>"</span>width=device-width, initial-scale=1.0<span>"</span></span> <span>/></span></span>
+    <span><span><span>&lt;</span>title</span><span>></span></span>Document<span><span><span>&lt;/</span>title</span><span>></span></span>
+  <span><span><span>&lt;/</span>head</span><span>></span></span>
+  <span><span><span>&lt;</span>style</span><span>></span></span><span><span>
+    <span>body,
+    html</span> <span>{</span>
+      <span>width</span><span>:</span> 100%<span>;</span>
+      <span>height</span><span>:</span> 100%<span>;</span>
+    <span>}</span>
+    <span>.box</span> <span>{</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>width</span><span>:</span> 100%<span>;</span>
+    <span>}</span>
+    <span>.right</span> <span>{</span>
+      <span>float</span><span>:</span> right<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>background-color</span><span>:</span> #ccc<span>;</span>
+    <span>}</span>
+    <span>.center</span> <span>{</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>background-color</span><span>:</span> #000<span>;</span>
+      <span>overflow</span><span>:</span> hidden<span>;</span>
+    <span>}</span>
+    <span>.left</span> <span>{</span>
+      <span>float</span><span>:</span> left<span>;</span>
+      <span>width</span><span>:</span> 200px<span>;</span>
+      <span>height</span><span>:</span> 200px<span>;</span>
+      <span>background-color</span><span>:</span> #ddd<span>;</span>
+    <span>}</span>
+  </span></span><span><span><span>&lt;/</span>style</span><span>></span></span>
+  <span><span><span>&lt;</span>body</span><span>></span></span>
+    <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>box<span>"</span></span><span>></span></span>
+      <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>left<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+      <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>right<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+      <span><span><span>&lt;</span>div</span> <span>class</span><span><span>=</span><span>"</span>center<span>"</span></span><span>></span></span><span><span><span>&lt;/</span>div</span><span>></span></span>
+    <span><span><span>&lt;/</span>div</span><span>></span></span>
+  <span><span><span>&lt;/</span>body</span><span>></span></span>
+<span><span><span>&lt;/</span>html</span><span>></span></span>
+//注意：该方法盒子的位置非常重要，中间自适应的盒子必须放到最后
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br></div></div><p>其余利用flex、浮动（float)和position定位都可以轻松实现</p>
+<h2 id="三、计算机基础"> 三、计算机基础</h2>
+<blockquote>
+<p>关于编译原理，不需要理解非常深入，但是最基本的原理和概念一定要懂，这对于学习一门编程语言非常重要</p>
+</blockquote>
+<h3 id="编译原理"> 编译原理</h3>
+<ul>
+<li><strong>1.理解代码到底是什么，计算机如何将代码转换为可以运行的目标程序</strong></li>
+<li><strong>2.正则表达式的匹配原理和性能优化</strong></li>
+<li><strong>3.如何将<code>JavaScript</code>代码解析成抽象语法树(<code>AST</code>)</strong></li>
+<li><strong>4.<code>base64</code>的编码原理</strong></li>
+<li><strong>5.几种进制的相互转换计算方法，在<code>JavaScript</code>中如何表示和转换</strong></li>
+</ul>
+<h3 id="网络协议"> 网络协议</h3>
+<ul>
+<li><strong>1.理解什么是协议，了解<code>TCP/IP</code>网络协议族的构成，每层协议在应用程序中发挥的作用</strong></li>
+</ul>
+<p><img src="./../../.vuepress/public/screenshot/image-20210815100654557.png" alt="image-20210815100654557"></p>
+<ul>
+<li><strong>2.三次握手和四次挥手详细原理，为什么要使用这种机制</strong></li>
+<li><strong>3.有哪些协议是可靠，<code>TCP</code>有哪些手段保证可靠交付</strong></li>
+</ul>
+<p>基于TCP的协议都是可靠传输，例如FTP(文件传输协议)、SMTP(简单邮件传输协议)</p>
+<p>手段：①确认ACK、②超时重传、③采用流量控制（滑动窗口方法）</p>
+<ul>
+<li><strong>4.<code>DNS</code>的作用、<code>DNS</code>解析的详细过程，<code>DNS</code>优化原理</strong></li>
+</ul>
+<p><strong>作用</strong>：将域名转换为ip地址，让客户端和服务器进行连接，这个过程称为DNS域名解析。</p>
+<p><strong>过程</strong>：①主机向本地DNS服务器查询（一般采用递归查询）。</p>
+<p>②本地DNS服务器向根域名服务器查询（一般采用迭代查询）。</p>
+<p>递归查询：主机向本地DNS服务器查询ip的过程中，本地DNS服务器通过递归，只会向主机返回ip地址或者未查询到的信息。</p>
+<p>迭代查询：本地DNS服务向根DNS服务器查询过程中，根DNS会向本地DNS服务器返回ip地址或者返回本地域名服务服务器下一步需要访问哪个DNS服务器的指示。</p>
+<p>优化原理：采用高度缓存的策略，存放最近查询过的域名以及从何处获得域名映射信息的记录。</p>
+<ul>
+<li>5.<strong><code>CDN</code>的作用和原理</strong></li>
+</ul>
+<p>CDN：内容分发网络</p>
+<p>作用：①提升用户访问网站的速度，提升用户体验</p>
+<p>②降低网站服务器请求的压力</p>
+<p>原理：在用户和服务器之间增加Cache层，主要是通过接管DNS实现，将用户的请求引导到Cache上获得源服务器的数据，从而降低网络的访问时间。</p>
+<p>过程：本地DNS域名服务器找到从根域名（或者授权域名）DNS服务器域名记录后，向智能调度DNS查询域名的ip地址，智能调度DNS 根据一定的算法和策略(比如静态拓扑，容量等),将最适合的CDN节点ip地址回应给本地DNS服务器。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210815160102780.png" alt="image-20210815160102780"></p>
+<ul>
+<li><strong>6.<code>HTTP</code>请求报文和响应报文的具体组成，能理解常见请求头的含义，有几种请求方式，区别是什么</strong></li>
+</ul>
+<p><img src="./../../.vuepress/public/screenshot/image-20210815160420489.png" alt="image-20210815160420489"></p>
+<p>常见请求头：</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210815161159455.png" alt="image-20210815161159455"></p>
+<p>请求方法：get、post、option、head、put、delete、connect</p>
+<ul>
+<li>7.<code>HTTP</code>所有状态码的具体含义，看到异常状态码能快速定位问题</li>
+</ul>
+<p>常见：200（请求成功）、301（网站永久重定向）、302（网站临时重定向）、304（资源未更新、使用缓存）、403（禁止访问）、404（资源不存在）、502（服务器无法响应）</p>
+<p>5xx：一般错误存在于服务器中。</p>
+<p>其他的错误一般存在于客户端中。</p>
+<ul>
+<li><strong>8.<code>HTTP1.1</code>、<code>HTTP2.0</code>带来的改变</strong></li>
+</ul>
+<p>HTTP1.1：</p>
+<p>①<strong>增加缓存策略</strong>。如：Entity tag、If-Unmodified-Since、If-Match、If-None-Match等更多可供选择的缓存头来控制缓存策略。</p>
+<p>②<strong>优化带宽和网络链接的使用</strong>。在HTTP1.0中存在一些浪费带宽的现象，例如客户端只是需要某个对象的一部分，而服务器却将整个对象送过来了，并且不支持断点续传的功能；HTTP1.1则在请求头引入了range头域，它允许只请求资源的某个部分，即返回码是206（Partial Content），这样就方便了开发者自由的选择以便于充分利用带宽和连接。</p>
+<p>③<strong>错误通知的管理</strong>。HTTP1.1中新增了<strong>24个错误状态响应码</strong>，如：409（Conflict）表示请求的资源与资源的当前状态发生冲突；410（Gone）表示服务器上的某个资源被永久性的删除。</p>
+<p>④<strong>Host头处理</strong>。在HTTP1.0中认为每台服务器都绑定唯一的IP地址，因此请求消息中的URL并没有传递主机名（hostname）。但是随着虚拟主机技术的发展，在一台物理服务器上可以存在多个虚拟主机（Multi-homed Web Servers），并且它们共享一个IP地址；在HTTP1.1的请求消息和响应消息都应支持host头域，且请求消息中如果没有host头域会报告一个错误（400 Bad Request）。简而言之就是一台服务器上可以利用host放多个网站。</p>
+<p>⑤<strong>长连接</strong>。HTTP1.1支持长连接（PersistentConnection）和请求的流水线（Pipelining）处理，在一个TCP连接上可以传送多个HTTP请求和响应，减少了建立连接和关闭连接的消耗和延迟；在HTTP1.1中默认开启了connection：keep-alive，一定程度上弥补了HTTP1.0每次请求都要创建连接的缺点。</p>
+<p>http2.0：</p>
+<p>①<strong>新的二进制格式</strong>。HTTP1.x的解析是基于文本。基于文本协议的格式解析存在天然缺陷，文本的表现形式有多样性，要做到健壮性考虑的场景必然很多，二进制则不同，只认0和1的组合。基于这种考虑HTTP2.0的协议解析决定采用二进制格式，实现方便且健壮。</p>
+<p>②<strong>Header头部压缩</strong>。如上文中所言，对前面提到过HTTP1.x的header带有大量信息，而且每次都要重复发送，HTTP2.0使用encoder来减少需要传输的header大小，通讯双方各自cache一份header fields表，既避免了重复header的传输，又减小了需要传输的大小。</p>
+<p><strong>③服务端推送</strong>。http2.0支持服务端可以将没有传输完的数据主动传输到客户端。</p>
+<p><strong>④多路复用</strong>。即连接共享，即每一个request都是用作连接共享机制的。一个request对应一个id，这样一个连接上可以有多个request，每个连接的request可以随机的混杂在一起，接收方可以根据request的id将request再归属到各自不同的服务端请求里面。</p>
+<ul>
+<li>
+<p><strong>9.<code>HTTPS</code>的加密原理，如何开启<code>HTTPS</code>，如何劫持<code>HTTPS</code>请求</strong></p>
+</li>
+<li>
+<p><strong>10.理解<code>WebSocket</code>协议的底层原理、与<code>HTTP</code>的区别</strong></p>
+</li>
+</ul>
+<p>全双工通信，服务端可以主动推送资源到客户端，主要用于实时数据的展示</p>
+<h3 id="设计模式"> 设计模式</h3>
+<ul>
+<li><strong>1.熟练使用前端常用的设计模式编写代码，如单例模式、装饰器模式、代理模式等</strong></li>
+<li><strong>2.发布订阅模式和观察者模式的异同以及实际应用</strong></li>
+<li><strong>3.可以说出几种设计模式在开发中的实际应用，理解框架源码中对设计模式的应用</strong></li>
+</ul>
+<h2 id="四、数据结构和算法"> 四、数据结构和算法</h2>
+<blockquote>
+<p>据我了解的大部分前端对这部分知识有些欠缺，甚至抵触，但是，如果突破更高的天花板，这部分知识是必不可少的，而且我亲身经历——非常有用！</p>
+</blockquote>
+<h3 id="javascript-编码能力"> JavaScript 编码能力</h3>
+<ul>
+<li>1.多种方式实现数组去重、扁平化、对比优缺点</li>
+</ul>
+<p>去重：</p>
+<div><pre><code><span>//改变自身</span>
+<span>function</span> <span>outRepeat1</span><span>(</span><span>arr</span><span>)</span> <span>{</span>
+  <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>;</span> i <span>&lt;</span> arr<span>.</span>length<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+    <span>for</span> <span>(</span><span>let</span> j <span>=</span> i <span>+</span> <span>1</span><span>;</span> j <span>&lt;</span> arr<span>.</span>length<span>;</span> j<span>++</span><span>)</span> <span>{</span>
+      <span>if</span> <span>(</span>arr<span>[</span>i<span>]</span> <span>===</span> arr<span>[</span>j<span>]</span><span>)</span> <span>{</span>
+        arr<span>.</span><span>splice</span><span>(</span>j<span>,</span> <span>1</span><span>)</span>
+        j<span>--</span> <span>//防止跳过元素</span>
+      <span>}</span>
+    <span>}</span>
+  <span>}</span>
+  <span>return</span> arr
+<span>}</span>
+
+
+<span>//重新赋值数组</span>
+<span>function</span> <span>outRepeat2</span><span>(</span><span>arr</span><span>)</span> <span>{</span>
+  <span>let</span> result <span>=</span> <span>[</span><span>]</span>
+  <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>;</span> i <span>&lt;</span> arr<span>.</span>length<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span>result<span>.</span><span>indexOf</span><span>(</span>arr<span>[</span>i<span>]</span><span>)</span> <span>===</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+      result<span>.</span><span>push</span><span>(</span>arr<span>[</span>i<span>]</span><span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>return</span> result
+<span>}</span>
+
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div></div><p>扁平化：</p>
+<div><pre><code><span>function</span> <span>flatDeep1</span><span>(</span><span>arr</span><span>)</span> <span>{</span>
+  <span>let</span> result <span>=</span> <span>[</span><span>]</span>
+  <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>;</span> i <span>&lt;</span> arr<span>.</span>length<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span>Array<span>.</span><span>isArray</span><span>(</span>arr<span>[</span>i<span>]</span><span>)</span><span>)</span> <span>{</span>
+      result <span>=</span> result<span>.</span><span>concat</span><span>(</span><span>flatDeep</span><span>(</span>arr<span>[</span>i<span>]</span><span>)</span><span>)</span>
+    <span>}</span> <span>else</span> <span>{</span>
+      result<span>.</span><span>push</span><span>(</span>arr<span>[</span>i<span>]</span><span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>return</span> result
+<span>}</span>
+<span>function</span> <span>flatDeep2</span><span>(</span><span>arr</span><span>)</span> <span>{</span>
+  <span>return</span> arr<span>.</span><span>reduce</span><span>(</span><span>function</span> <span>(</span><span>pre<span>,</span> next</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span>Array<span>.</span><span>isArray</span><span>(</span>next<span>)</span><span>)</span> <span>{</span>
+      <span>return</span> pre<span>.</span><span>concat</span><span>(</span><span>flatDeep</span><span>(</span>next<span>)</span><span>)</span>
+    <span>}</span> <span>else</span> <span>{</span>
+      <span>return</span> pre<span>.</span><span>concat</span><span>(</span>next<span>)</span>
+    <span>}</span>
+  <span>}</span><span>,</span> <span>[</span><span>]</span><span>)</span>
+<span>}</span>
+<span>//第三种，利用flat方法</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br></div></div><ul>
+<li>2.多种方式实现深拷贝、对比优缺点</li>
+</ul>
+<div><pre><code> <span>function</span> <span>deepCopy</span><span>(</span><span>target</span><span>)</span> <span>{</span>
+            <span>let</span> newTar <span>=</span> target <span>instanceof</span> <span>Array</span> <span>?</span> <span>[</span><span>]</span> <span>:</span> <span>{</span><span>}</span>
+            <span>if</span> <span>(</span>target <span>&amp;&amp;</span> <span>typeof</span><span>(</span>target<span>)</span> <span>==</span> <span>'object'</span><span>)</span> <span>{</span>
+                <span>for</span> <span>(</span><span>let</span> item <span>in</span> target<span>)</span> <span>{</span>
+                    <span>if</span> <span>(</span>newTar<span>.</span><span>hasOwnProperty</span><span>(</span>item<span>)</span><span>)</span> <span>{</span>
+                        newTar<span>[</span>item<span>]</span> <span>=</span> <span>deepCopy</span><span>(</span>target<span>[</span>item<span>]</span><span>)</span>
+                    <span>}</span> <span>else</span> <span>{</span>
+                        newTar<span>[</span>item<span>]</span> <span>=</span> target<span>[</span>item<span>]</span><span>;</span>
+                    <span>}</span>
+                <span>}</span>
+            <span>}</span>
+            <span>return</span> newTar<span>;</span>
+        <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br></div></div><ul>
+<li>3.手写函数柯里化工具函数、并理解其应用场景和优势</li>
+<li>4.手写防抖和节流工具函数、并理解其内部原理和应用场景</li>
+<li>5.实现一个<code>sleep</code>函数</li>
+</ul>
+<h3 id="手动实现前端轮子"> 手动实现前端轮子</h3>
+<ul>
+<li>1.手动实现<code>call、apply、bind</code></li>
+<li>2.手动实现符合<code>Promise/A+</code>规范的<code>Promise</code>、手动实现<code>async await</code></li>
+<li>3.手写一个<code>EventEmitter</code>实现事件发布、订阅</li>
+</ul>
+<div><pre><code><span>// 发布订阅模式</span>
+<span>class</span> <span>EventEmitter</span> <span>{</span>
+  <span>constructor</span><span>(</span><span>)</span> <span>{</span>
+    <span>// 事件对象，存放订阅的名字和事件  如:  { click: [ handle1, handle2 ]  }</span>
+    <span>this</span><span>.</span>events <span>=</span> <span>{</span><span>}</span>
+  <span>}</span>
+  <span>// 订阅事件的方法</span>
+  <span>on</span><span>(</span><span>eventName<span>,</span> callback</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span><span>!</span><span>this</span><span>.</span>events<span>[</span>eventName<span>]</span><span>)</span> <span>{</span>
+      <span>// 一个名字可以订阅多个事件函数</span>
+      <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span> <span>=</span> <span>[</span>callback<span>]</span>
+    <span>}</span> <span>else</span> <span>{</span>
+      <span>// 存在则push到指定数组的尾部保存</span>
+      <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span><span>.</span><span>push</span><span>(</span>callback<span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>// 触发事件的方法</span>
+  <span>emit</span><span>(</span><span>eventName<span>,</span> <span>...</span>rest</span><span>)</span> <span>{</span>
+    <span>// 遍历执行所有订阅的事件</span>
+    <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span> <span>&amp;&amp;</span>
+      <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span><span>.</span><span>forEach</span><span>(</span><span>f</span> <span>=></span> <span>f</span><span>.</span><span>apply</span><span>(</span><span>this</span><span>,</span> rest<span>)</span><span>)</span>
+  <span>}</span>
+  <span>// 移除订阅事件</span>
+  <span>remove</span><span>(</span><span>eventName<span>,</span> callback</span><span>)</span> <span>{</span>
+    <span>if</span> <span>(</span><span>this</span><span>.</span>events<span>[</span>eventName<span>]</span><span>)</span> <span>{</span>
+      <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span> <span>=</span> <span>this</span><span>.</span>events<span>[</span>eventName<span>]</span><span>.</span><span>filter</span><span>(</span><span>f</span> <span>=></span> f <span>!=</span> callback<span>)</span>
+    <span>}</span>
+  <span>}</span>
+  <span>// 只执行一次订阅的事件，然后移除</span>
+  <span>once</span><span>(</span><span>eventName<span>,</span> callback</span><span>)</span> <span>{</span>
+    <span>// 绑定的时fn, 执行的时候会触发fn函数</span>
+    <span>const</span> <span>fn</span> <span>=</span> <span>(</span><span><span>...</span>rest</span><span>)</span> <span>=></span> <span>{</span>
+      <span>callback</span><span>.</span><span>apply</span><span>(</span><span>this</span><span>,</span> rest<span>)</span> <span>// fn函数中调用原有的callback</span>
+      <span>this</span><span>.</span><span>remove</span><span>(</span>eventName<span>,</span> fn<span>)</span> <span>// 删除fn, 再次执行的时候之后执行一次</span>
+    <span>}</span>
+    <span>this</span><span>.</span><span>on</span><span>(</span>eventName<span>,</span> fn<span>)</span>
+  <span>}</span>
+<span>}</span>
+
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br></div></div><ul>
+<li>4.可以说出两种实现双向绑定的方案、可以手动实现</li>
+</ul>
+<div><pre><code><span>const</span> person <span>=</span> <span>{</span><span>}</span>
+Object<span>.</span><span>defineProperty</span><span>(</span>person<span>,</span> <span>'name'</span><span>,</span> <span>{</span>
+    <span>get</span><span>:</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+        console<span>.</span><span>log</span><span>(</span><span>'获取到name了'</span><span>)</span>
+    <span>}</span><span>,</span>
+    <span>set</span><span>:</span> <span>function</span><span>(</span><span>val</span><span>)</span> <span>{</span>
+        console<span>.</span><span>log</span><span>(</span><span>'设置了name为'</span> <span>+</span> val<span>)</span>
+    <span>}</span>
+<span>}</span><span>)</span>
+person<span>.</span>name  <span>//获取到name了</span>
+person<span>.</span>name <span>=</span> <span>'小谢'</span>  <span>//设置了name为小谢</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div></div><ul>
+<li><strong>5.手写<code>JSON.stringify</code>、<code>JSON.parse</code></strong></li>
+</ul>
+<p>用这个函数实现深拷贝缺点：如果拷贝对象属性有fun、undefind、正则、数组对象等，内容会丢失</p>
+<ul>
+<li>6.<strong>手写一个模版引擎，并能解释其中原理</strong></li>
+</ul>
+<p>利用正则表达式可以实现</p>
+<ul>
+<li>7.手写<code>懒加载</code>、<code>下拉刷新</code>、<code>上拉加载</code>、<code>预加载</code>等效果</li>
+</ul>
+<h3 id="数据结构"> 数据结构</h3>
+<ul>
+<li>1.理解常见数据结构的特点，以及他们在不同场景下使用的优缺点</li>
+<li>2.理解<code>数组</code>、<code>字符串</code>的存储原理，并熟练应用他们解决问题</li>
+<li>3.理解<code>二叉树</code>、<code>栈</code>、<code>队列</code>、<code>哈希表</code>的基本结构和特点，并可以应用它解决问题</li>
+<li>4.了解<code>图</code>、<code>堆</code>的基本结构和使用场景</li>
+</ul>
+<h3 id="算法"> 算法</h3>
+<ul>
+<li>1.可计算一个算法的时间复杂度和空间复杂度，可估计业务逻辑代码的耗时和内存消耗</li>
+<li>2.至少理解五种排序算法的实现原理、应用场景、优缺点，可快速说出时间、空间复杂度</li>
+<li>3.了解递归和循环的优缺点、应用场景、并可在开发中熟练应用</li>
+<li>4.可应用<code>回溯算法</code>、<code>贪心算法</code>、<code>分治算法</code>、<code>动态规划</code>等解决复杂问题</li>
+<li>5.前端处理海量数据的算法方案</li>
+</ul>
+<h2 id="五、运行环境"> 五、运行环境</h2>
+<p>我们需要理清语言和环境的关系：</p>
+<blockquote>
+<p><code>ECMAScript</code>描述了<code>JavaScript</code>语言的语法和基本对象规范</p>
+</blockquote>
+<blockquote>
+<p>浏览器作为<code>JavaScript</code>的一种运行环境，为它提供了：文档对象模型（<code>DOM</code>），描述处理网页内容的方法和接口、浏览器对象模型（<code>BOM</code>），描述与浏览器进行交互的方法和接口</p>
+</blockquote>
+<blockquote>
+<p>Node 也是<code>JavaScript</code>的一种运行环境，为它提供了操作<code>I/O</code>、网络等<code>API</code></p>
+</blockquote>
+<h3 id="浏览器-api"> 浏览器 API</h3>
+<ul>
+<li>1.浏览器提供的符合<code>W3C</code>标准的<code>DOM</code>操作<code>API</code>、浏览器差异、兼容性</li>
+<li>2.浏览器提供的浏览器对象模型 (<code>BOM</code>)提供的所有全局<code>API</code>、浏览器差异、兼容性</li>
+<li>3.大量<code>DOM</code>操作、海量数据的性能优化(合并操作、<code>Diff</code>、<code>requestAnimationFrame</code>等)</li>
+<li>4.浏览器海量数据存储、操作性能优化</li>
+<li>5.<code>DOM</code>事件流的具体实现机制、不同浏览器的差异、事件代理</li>
+<li>6.前端发起网络请求的几种方式及其底层实现、可以手写原生<code>ajax</code>、<code>fetch</code>、可以熟练使用第三方库</li>
+<li>7.浏览器的同源策略，如何避免同源策略，几种方式的异同点以及如何选型</li>
+<li>8.浏览器提供的几种存储机制、优缺点、开发中正确的选择</li>
+<li>9.浏览器跨标签通信</li>
+</ul>
+<h3 id="浏览器原理"> 浏览器原理</h3>
+<ul>
+<li>1.各浏览器使用的<code>JavaScript</code>引擎以及它们的异同点、如何在代码中进行区分</li>
+<li>2.请求数据到请求结束与服务器进行了几次交互</li>
+<li>3.可详细描述浏览器从输入<code>URL</code>到页面展现的详细过程</li>
+<li>4.浏览器解析<code>HTML</code>代码的原理，以及构建<code>DOM</code>树的流程</li>
+<li>5.浏览器如何解析<code>CSS</code>规则，并将其应用到<code>DOM</code>树上</li>
+<li>6.浏览器如何将解析好的带有样式的<code>DOM</code>树进行绘制</li>
+<li>7.浏览器的运行机制，如何配置资源异步同步加载</li>
+<li>8.浏览器回流与重绘的底层原理，引发原因，如何有效避免</li>
+<li>9.浏览器的垃圾回收机制，如何避免内存泄漏</li>
+<li>10.浏览器采用的缓存方案，如何选择和控制合适的缓存方案</li>
+</ul>
+<h3 id="node"> Node</h3>
+<ul>
+<li>1.理解<code>Node</code>在应用程序中的作用，可以使用<code>Node</code>搭建前端运行环境、使用<code>Node</code>操作文件、操作数据库等等</li>
+<li>2.掌握一种<code>Node</code>开发框架，如<code>Express</code>，<code>Express</code>和<code>Koa</code>的区别</li>
+<li>3.熟练使用<code>Node</code>提供的<code>API</code>如<code>Path</code>、<code>Http</code>、<code>Child Process</code>等并理解其实现原理</li>
+<li>4.<code>Node</code>的底层运行原理、和浏览器的异同</li>
+<li>5.<code>Node</code>事件驱动、非阻塞机制的实现原理</li>
+</ul>
+<h2 id="六、框架和类库"> 六、框架和类库</h2>
+<blockquote>
+<p>轮子层出不穷，从原理上理解才是正道</p>
+</blockquote>
+<h3 id="typescript"> TypeScript</h3>
+<ul>
+<li>1.理解<code>泛型</code>、<code>接口</code>等面向对象的相关概念，<code>TypeScript</code>对面向对象理念的实现</li>
+<li>2.理解使用<code>TypeScript</code>的好处，掌握<code>TypeScript</code>基础语法</li>
+<li>3.<code>TypeScript</code>的规则检测原理</li>
+<li>4.可以在<code>React</code>、<code>Vue</code>等框架中使用<code>TypeScript</code>进行开发</li>
+</ul>
+<h3 id="react"> React</h3>
+<ul>
+<li>1.<code>React</code>和<code>vue</code>选型和优缺点、核心架构的区别</li>
+<li>2.<code>React</code>中<code>setState</code>的执行机制，如何有效的管理状态</li>
+<li>3.<code>React</code>的事件底层实现机制</li>
+<li>4.<code>React</code>的虚拟<code>DOM</code>和<code>Diff</code>算法的内部实现</li>
+<li>5.<code>React</code>的<code>Fiber</code>工作原理，解决了什么问题</li>
+<li>6.<code>React Router</code>和<code>Vue Router</code>的底层实现原理、动态加载实现原理</li>
+<li>7.可熟练应用<code>React API</code>、生命周期等，可应用<code>HOC</code>、<code>render props</code>、<code>Hooks</code>等高阶用法解决问题</li>
+<li>8.基于<code>React</code>的特性和原理，可以手动实现一个简单的<code>React</code></li>
+</ul>
+<h3 id="vue"> Vue</h3>
+<ul>
+<li>1.熟练使用<code>Vue</code>的<code>API</code>、生命周期、钩子函数</li>
+<li>2.<code>MVVM</code>框架设计理念</li>
+<li>3.<code>Vue</code>双向绑定实现原理、<code>Diff</code>算法的内部实现</li>
+<li>4.<code>Vue</code>的事件机制</li>
+<li>5.从<code>template</code>转换成真实<code>DOM</code>的实现机制</li>
+</ul>
+<h3 id="多端开发"> 多端开发</h3>
+<ul>
+<li>1.单页面应用（<code>SPA</code>）的原理和优缺点，掌握一种快速开发<code>SPA</code>的方案</li>
+<li>2.理解<code>Viewport</code>、<code>em</code>、<code>rem</code>的原理和用法，分辨率、<code>px</code>、<code>ppi</code>、<code>dpi</code>、<code>dp</code>的区别和实际应用</li>
+<li>3.移动端页面适配解决方案、不同机型适配方案</li>
+<li>4.掌握一种<code>JavaScript</code>移动客户端开发技术，如<code>React Native</code>：可以搭建<code>React Native</code>开发环境，熟练进行开发，可理解<code>React Native</code>的运作原理，不同端适配</li>
+<li>5.掌握一种<code>JavaScript</code> <code>PC</code>客户端开发技术，如<code>Electron</code>：可搭建<code>Electron</code>开发环境，熟练进行开发，可理解<code>Electron</code>的运作原理</li>
+<li>6.掌握一种小程序开发框架或原生小程序开发</li>
+<li>7.理解多端框架的内部实现原理，至少了解一个多端框架的使用</li>
+</ul>
+<h3 id="数据流管理"> 数据流管理</h3>
+<ul>
+<li>1.掌握<code>React</code>和<code>Vue</code>传统的跨组件通信方案，对比采用数据流管理框架的异同</li>
+<li>2.熟练使用<code>Redux</code>管理数据流，并理解其实现原理，中间件实现原理</li>
+<li>3.熟练使用<code>Mobx</code>管理数据流，并理解其实现原理，相比<code>Redux</code>有什么优势</li>
+<li>4.熟练使用<code>Vuex</code>管理数据流，并理解其实现原理</li>
+<li>5.以上数据流方案的异同和优缺点，不情况下的技术选型</li>
+</ul>
+<h3 id="实用库"> 实用库</h3>
+<ul>
+<li>1.至少掌握一种<code>UI</code>组件框架，如<code>antd design</code>，理解其设计理念、底层实现</li>
+<li>2.掌握一种图表绘制框架，如<code>Echart</code>，理解其设计理念、底层实现，可以自己实现图表</li>
+<li>3.掌握一种<code>GIS</code>开发框架，如百度地图<code>API</code></li>
+<li>4.掌握一种可视化开发框架，如<code>Three.js</code>、<code>D3</code></li>
+<li>5.工具函数库，如<code>lodash</code>、<code>underscore</code>、<code>moment</code>等，理解使用的工具类或工具函数的具体实现原理</li>
+</ul>
+<h3 id="开发和调试"> 开发和调试</h3>
+<ul>
+<li>1.熟练使用各浏览器提供的调试工具</li>
+<li>2.熟练使用一种代理工具实现请求代理、抓包，如<code>charls</code></li>
+<li>3.可以使用<code>Android</code>、<code>IOS</code>模拟器进行调试，并掌握一种真机调试方案</li>
+<li>4.了解<code>Vue</code>、<code>React</code>等框架调试工具的使用</li>
+</ul>
+<h2 id="七、前端工程"> 七、前端工程</h2>
+<blockquote>
+<p>前端工程化：以工程化方法和工具提高开发生产效率、降低维护难度</p>
+</blockquote>
+<h3 id="项目构建"> 项目构建</h3>
+<ul>
+<li>1.理解<code>npm</code>、<code>yarn</code>依赖包管理的原理，两者的区别</li>
+<li>2.可以使用<code>npm</code>运行自定义脚本</li>
+<li>3.理解<code>Babel</code>、<code>ESLint</code>、<code>webpack</code>等工具在项目中承担的作用</li>
+<li>4.<code>ESLint</code>规则检测原理，常用的<code>ESLint</code>配置</li>
+<li>5.<code>Babel</code>的核心原理，可以自己编写一个<code>Babel</code>插件</li>
+<li>6.可以配置一种前端代码兼容方案，如<code>Polyfill</code></li>
+<li>7.<code>Webpack</code>的编译原理、构建流程、热更新原理，<code>chunk</code>、<code>bundle</code>和<code>module</code>的区别和应用</li>
+<li>8.可熟练配置已有的<code>loaders</code>和<code>plugins</code>解决问题，可以自己编写<code>loaders</code>和<code>plugins</code></li>
+</ul>
+<h3 id="nginx"> nginx</h3>
+<ul>
+<li>1.正向代理与反向代理的特点和实例</li>
+<li>2.可手动搭建一个简单的<code>nginx</code>服务器、</li>
+<li>3.熟练应用常用的<code>nginx</code>内置变量，掌握常用的匹配规则写法</li>
+<li>4.可以用<code>nginx</code>实现请求过滤、配置<code>gzip</code>、负载均衡等，并能解释其内部原理</li>
+</ul>
+<h3 id="开发提速"> 开发提速</h3>
+<ul>
+<li>1.熟练掌握一种接口管理、接口<code>mock</code>工具的使用，如<code>yapi</code></li>
+<li>2.掌握一种高效的日志埋点方案，可快速使用日志查询工具定位线上问题</li>
+<li>3.理解<code>TDD</code>与<code>BDD</code>模式，至少会使用一种前端单元测试框架</li>
+</ul>
+<h3 id="版本控制"> 版本控制</h3>
+<ul>
+<li>1.理解<code>Git</code>的核心原理、工作流程、和<code>SVN</code>的区别</li>
+<li>2.熟练使用常规的<code>Git</code>命令、<code>git rebase</code>、<code>git stash</code>等进阶命令</li>
+<li>3.可以快速解决<code>线上分支回滚</code>、<code>线上分支错误合并</code>等复杂问题</li>
+</ul>
+<h3 id="持续集成"> 持续集成</h3>
+<ul>
+<li>1.理解<code>CI/CD</code>技术的意义，至少熟练掌握一种<code>CI/CD</code>工具的使用，如<code>Jenkins</code></li>
+<li>2.可以独自完成架构设计、技术选型、环境搭建、全流程开发、部署上线等一套完整的开发流程（包括<code>Web</code>应用、移动客户端应用、<code>PC</code>客户端应用、小程序、<code>H5</code>等等）</li>
+</ul>
+<h2 id="八、项目和业务"> 八、项目和业务</h2>
+<h3 id="后端技能"> 后端技能</h3>
+<ul>
+<li>1.了解后端的开发方式，在应用程序中的作用，至少会使用一种后端语言</li>
+<li>2.掌握数据最终在数据库中是如何落地存储的，能看懂表结构设计、表之间的关联，至少会使用一种数据库</li>
+</ul>
+<h3 id="性能优化"> 性能优化</h3>
+<ul>
+<li>1.了解前端性能衡量指标、性能监控要点，掌握一种前端性能监控方案</li>
+<li>2.了解常见的<code>Web</code>、<code>App</code>性能优化方案</li>
+<li>3.<code>SEO</code>排名规则、<code>SEO</code>优化方案、前后端分离的<code>SEO</code></li>
+<li>4.<code>SSR</code>实现方案、优缺点、及其性能优化</li>
+<li>5.<code>Webpack</code>的性能优化方案</li>
+<li>6.<code>Canvas</code>性能优化方案</li>
+<li>7.<code>React</code>、<code>Vue</code>等框架使用性能优化方案</li>
+</ul>
+<h3 id="前端安全"> 前端安全</h3>
+<ul>
+<li>1.<code>XSS</code>攻击的原理、分类、具体案例，前端如何防御</li>
+<li>2.<code>CSRF</code>攻击的原理、具体案例，前端如何防御</li>
+<li>3.<code>HTTP</code>劫持、页面劫持的原理、防御措施</li>
+</ul>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>el-menu菜单栏选中效果失效问题</title>
+      <link>https://xiezhenghua123.github.io/blob/article/trap/el-menu/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/trap/el-menu/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">el-menu菜单栏选中效果失效问题</source>
+      <category>element-ui</category>
+      <pubDate>Mon, 02 Aug 2021 07:18:09 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>我在使用 element-ui 中的 el-menu 菜单栏组件的过程中，遇到了一个选中样式效果失效的问题，花了我挺久的时间才解决掉，element-ui 版本为 2.13。</p>
+<h3 id="描述"> <strong>描述</strong></h3>
+<p>我用 v-if 判断 el-menu-item 是否显示，会出现某一个 el-menu-item 无法被父组件 el-menu 收集，然后选中高亮效果消失</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210802144732552.png" alt="image-20210802144732552"></p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210802145019961.png" alt="image-20210802145019961"></p>
+<h3 id="解决办法"> <strong>解决办法</strong></h3>
+<p>不用 v-if 判断，用 v-show 进行判断 el-menu-item</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210802145713453.png" alt="image-20210802145713453"></p>
+<h3 id="原因"> <strong>原因</strong></h3>
+<p>用 v-if 未渲染出 el-menu-item，可以用 v-show 在 mount 阶段之前提前渲染出来再进行判断。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>浏览器输入url到页面加载完成的全过程解析</title>
+      <link>https://xiezhenghua123.github.io/blob/article/interview/url/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/interview/url/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">浏览器输入url到页面加载完成的全过程解析</source>
+      <category>面经</category>
+      <pubDate>Thu, 22 Jul 2021 08:34:14 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>这个问题是前端面试的一个经典问题，你吃透了它，基本能掌握前端的大部分知识，经过对这个问题长时间的探索，我终于稍微理解了它，不容易啊。</p>
+<h3 id="过程"> <strong>过程</strong></h3>
+<p>整个过程主要分为以下步骤：</p>
+<ol>
+<li>浏览器的地址栏输入 url 并按下回车</li>
+<li>浏览器会根据你的 url 查看浏览器是否有缓存（DNS域名缓存），并且对比过期时间</li>
+<li>DNS 根据 url 解析出 ip 地址，并且找到端口号</li>
+<li>三次握手建立连接</li>
+<li>浏览器发起 http 请求（这里也会查缓存，有可能强缓存，也有可能协商缓存）</li>
+<li>服务器接收到请求并处理，浏览器收到 http 响应</li>
+<li>进行页面渲染，构建 DOM 树，CSS 树等</li>
+<li>四次挥手断开连接。</li>
+</ol>
+<p>接下来对其中的一些步骤展开细说。</p>
+<h3 id="url-构成"> <strong>URL 构成</strong></h3>
+<p>我们常见的 URL 是这样的**😗*http://www.baidu.com,这个域名由三部分组成：协议名、域名、端口号，这里端口是默认所以隐藏。除此之外URL还会包含一些路径、查询和其他片段，例如：http://www.tuicool.com/search?kw=%E4%。我们最常见的的协议是HTTP协议，除此之外还有加密的HTTPS协议、FTP协议、FILe协议等等。URL的中间部分为域名或者是IP，之后就是端口号了。通常端口号不常见是因为大部分的都是使用默认端口，如HTTP默认端口80，HTTPS默认端口443。</p>
+<h3 id="缓存"> <strong>缓存</strong></h3>
+<p>浏览器缓存根据是否需要<strong>重新向服务器发起请求</strong>总共分为两类：强缓存和协商缓存。</p>
+<p><strong>强缓存（不需要）对应的 HTTP 首部字段</strong>：cache-control，Expires。</p>
+<p>Expires：是一个绝对时间，即服务器时间。浏览器检查当前时间，如果还没到失效时间就直接使用缓存文件。但是该方法存在一个问题：服务器时间与客户端（本地时间）时间可能不一致。因此该字段已经很少使用。（这个字段需要和 Last-modified 结合使用。Expires 是 Web 服务器响应消息头字段，在响应 http 请求时告诉浏览器在过期时间前浏览器可以直接从浏览器缓存取数据，而无需再次请求。）</p>
+<p>cache-control：这个字段中有一个指令 max-age，可以保存相对时间。</p>
+<p>如果同时存在 cache-control 和 Expires，浏览器总是优先使用 cache-control。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210722153043670.png" alt="image-20210722153043670"></p>
+<p><strong>协商缓存（需要）对应的 HTTP 两组字段</strong>：If-since-modified 和 last-modified、if-none-match 和 Etag</p>
+<p>If-since-modified 和 last-modified：发送 HTTP 请求时携带 If-since-modified 字段，服务端收到请求时将这个字段的时间和服务器最后内容更新的时间进行对比，如果在在有效期内，则返回 304 状态码，告诉浏览器可以使用缓存。如果内容更新了，则返回 200 状态码，进行数据更新，并且 http 响应头携带最新的 last-modified 时间值返回。这组字段会存在一定的弊端，因为是根据文件修改时间来判定是否更新的，如果修改了文件，但内容没变，服务器的 last-modified 还是会更新。</p>
+<p>if-none-match 和 Etag：流程和上面的 last-modified 一样，只是 Etag 值是根据文件内容是否修改来进行判定，进行产生一个哈希字符串存在服务器的 Etag 中。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210722153143708.png" alt=""></p>
+<h3 id="dns-解析"> <strong>DNS 解析</strong></h3>
+<p>我们知道在地址栏输入的域名并不是最后资源所在的真实位置，域名只是与 IP 地址的一个映射。网络服务器的 IP 地址那么多，我们不可能去记一串串的数字，因此域名就产生了，域名解析的过程实际是将域名还原为 IP 地址的过程。</p>
+<ul>
+<li>首先浏览器先检查本地 hosts 文件是否有这个网址映射关系，如果有就调用这个 IP 地址映射，完成域名解析。</li>
+<li>如果没找到则会查找本地 DNS 解析器缓存，如果查找到则返回。</li>
+<li>如果还是没有找到则会查找本地 DNS 服务器（一般采用递归查询），如果查找到则返回。</li>
+<li>DNS本地域名服务器向根域名服务器查询（一般采用迭代查询），按根域服务器 -&gt;顶级域-&gt;第二层域 → 子域，找到 IP 地址。</li>
+</ul>
+<p>迭代查询：主机向本地DNS服务器查询ip的过程中，本地DNS服务器通过递归，只会向主机返回ip地址或者未查询到的信息。</p>
+<p>递归查询：本地DNS服务向根DNS服务器查询过程中，根DNS会向本地DNS服务器返回ip地址或者返回本地域名服务服务器下一步需要访问哪个DNS服务器的指示。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210722153314307.png" alt="image-20210722153314307"></p>
+<h3 id="tcp-三次握手建立连接"> <strong>TCP 三次握手建立连接</strong></h3>
+<p>第一次握手：客户端向服务端发送请求，说：“我的序列号是 a1，想和你建立连接，你同意的话就回个确认消息 b 吧。”</p>
+<p>第二次握手：服务端向客户端回应消息，说：’好的，收到，回你个确认消息 b，我的序列号是 a2，你想连接就回个消息 d 吧“。</p>
+<p>第三次握手：客户端收到服务端消息并回应，说：”收到，回你个消息 d“</p>
+<p>连接建立。</p>
+<h3 id="浏览器向服务器发送-http-请求并接收到响应"> <strong>浏览器向服务器发送 HTTP 请求并接收到响应</strong></h3>
+<p>完整的 HTTP 请求包含请求起始行、请求头部、请求主体三部分。</p>
+<p>服务器在收到浏览器发送的 HTTP 请求之后，会将收到的 HTTP 报文封装成 HTTP 的 Request 对象，并通过不同的 Web 服务器进行处理，处理完的结果以 HTTP 的 Response 对象返回，主要包括状态码，响应头，响应报文三个部分。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210722153424168.png" alt="image-20210722153424168"></p>
+<h3 id="页面渲染"> <strong>页面渲染</strong></h3>
+<p>浏览器渲染页面的过程总共分 5 步：</p>
+<ul>
+<li>浏览器将获取的 HTML 文档解析成 DOM 树。</li>
+<li>处理 CSS 标记，构成层叠样式表模型 CSSOM(CSS Object Model)。</li>
+<li>将 DOM 和 CSSOM 合并为渲染树(<code>rendering tree</code>)，代表一系列将被渲染的对象。</li>
+<li>渲染树的每个元素包含的内容都是计算过的，它被称之为布局<code>layout</code>。浏览器使用一种流式处理的方法，只需要一次绘制操作就可以布局所有的元素。</li>
+<li>将渲染树的各个节点绘制到屏幕上，这一步被称为绘制<code>painting</code>。</li>
+</ul>
+<p><img src="./../../.vuepress/public/screenshot/image-20210722153451965.png" alt="image-20210722153451965"></p>
+<p>需要注意的是，以上五个步骤并不一定一次性顺序完成，比如 DOM 或 CSSOM 被修改时，亦或是哪个过程会重复执行，这样才能计算出哪些像素需要在屏幕上进行重新渲染。</p>
+<p>在实际情况中，JavaScript 和 CSS 的某些操作往往会多次修改 DOM 或者 CSSOM，从而导致<strong>重绘</strong>和<strong>重排</strong>等性能问题，要尽量避免。</p>
+<p>**关于 js 阻塞：**JS 可以操作 DOM 来修改 DOM 结构，可以操作 CSSOM 来修改节点样式，这就导致了浏览器在遇到<code>&lt;script&gt;</code>标签时，DOM 构建将暂停，直至脚本完成执行，然后继续构建 DOM。如果脚本是外部的，会等待脚本下载完毕，再继续解析文档。现在可以在<code>script</code>标签上增加属性<code>defer</code>或者<code>async</code>。脚本解析会将脚本中改变 DOM 和 CSS 的地方分别解析出来，追加到 DOM 树和 CSSOM 规则树上。</p>
+<h3 id="四次挥手-断开连接"> <strong>四次挥手，断开连接</strong></h3>
+<p>第一次挥手：客户端向服务器发消息，说：’我没有数据要发送了，希望断开连接，如果同意就回复个消息 m”</p>
+<p>第二次挥手：服务端向客户端发消息，说：‘收到，回你个消息 m’，消息发完之后，服务端在查数据是不是全部发完了。</p>
+<p>第三次挥手：服务端向客户端发消息，说：‘我也没有数据要发送了，要断开连接了，同意就回个消息 n“</p>
+<p>第四次挥手：客户端向服务端发消息，说：’收到，回你个消息 n‘。</p>
+<p>断开连接。</p>
+<p>参考文章：<a href="https://www.cnblogs.com/liutianzeng/p/10456865.html" target="_blank" rel="noopener noreferrer">输入 url 经历了什么<i>Content not supported</i></a>、<a href="https://blog.csdn.net/weixin_39307273/article/details/104918716" target="_blank" rel="noopener noreferrer">页面渲染过程<i>Content not supported</i></a>、<a href="https://juejin.cn/post/6844903593275817998" target="_blank" rel="noopener noreferrer">浏览器缓存机制<i>Content not supported</i></a></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>vue响应式原理</title>
+      <link>https://xiezhenghua123.github.io/blob/article/vue/responsive/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/vue/responsive/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">vue响应式原理</source>
+      <category>vue</category>
+      <pubDate>Sat, 17 Jul 2021 14:59:04 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="前言"> <strong>前言</strong></h3>
+<p>看了好久的vue响应式原理，一直没看懂，直到我最近看到了实习公司的一位同事写的一篇分享文章，然后结合vue技术揭秘，终于对它有一点点的感悟了。</p>
+<h3 id="核心"> <strong>核心</strong></h3>
+<p>Vue响应式的核心是利用Object.defineProperty()这个方法进行数据劫持和观察者模式进行数据响应式的。Object.defineProperty()这个方法会直接在一个对象上定义一个新属性，或者修改一个对象的现有属性，并返回此对象。具体用法如下：</p>
+<p>​      它有三个参数，第一个是object，它代表要定义属性的对象。；第二个是prop，它代表目标对象的属性值；第三个参数是descriptor，它代表要定义或修改的属性描述符。</p>
+<p>​      响应式用法：</p>
+<div><pre><code><span>const</span> person <span>=</span> <span>{</span><span>}</span>
+Object<span>.</span><span>defineProperty</span><span>(</span>person<span>,</span> <span>'name'</span><span>,</span> <span>{</span>
+    <span>get</span><span>:</span> <span>function</span><span>(</span><span>)</span> <span>{</span>
+        console<span>.</span><span>log</span><span>(</span><span>'获取到name了'</span><span>)</span>
+    <span>}</span><span>,</span>
+    <span>set</span><span>:</span> <span>function</span><span>(</span><span>val</span><span>)</span> <span>{</span>
+        console<span>.</span><span>log</span><span>(</span><span>'设置了name为'</span> <span>+</span> val<span>)</span>
+    <span>}</span>
+<span>}</span><span>)</span>
+person<span>.</span>name  <span>//获取到name了</span>
+person<span>.</span>name <span>=</span> <span>'小谢'</span>  <span>//设置了name为小谢</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div></div><h3 id="观察者模式"> <strong>观察者模式</strong></h3>
+<p>什么是观察者模式？它分为<strong>注册环节跟发布环节</strong>。</p>
+<p>比如我去买芝士蛋糕，但是店家还没有做出来。这时候我又不想在店外面傻傻等，我就需要隔一段时间来回来问问蛋糕做好没，对于我来说是很麻烦的事情，说不定我就懒得买了。</p>
+<p>店家肯定想要做生意，不想流失我这个吃货客户。于是，在蛋糕没有做好的这段时间，有客户来，他们就让客户把自己的电话留下，这就是观察者模式中的<strong>注册环节</strong>。然后蛋糕做好之后，一次性通知所有记录了的客户，这就是观察者的<strong>发布环节</strong>。</p>
+<p>一个简单的观察者模式类：</p>
+<div><pre><code><span>function</span> <span>Observer</span><span>(</span><span>)</span> <span>{</span>
+  <span>this</span><span>.</span>dep <span>=</span> <span>[</span><span>]</span><span>;</span>
+  
+  <span>register</span><span>(</span><span>fn</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>dep<span>.</span><span>push</span><span>(</span>fn<span>)</span>
+  <span>}</span>
+  
+  <span>notify</span><span>(</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>dep<span>.</span><span>forEach</span><span>(</span><span>item</span> <span>=></span> <span>item</span><span>(</span><span>)</span><span>)</span>
+  <span>}</span>
+<span>}</span>
+
+<span>const</span> wantCake <span>=</span> <span>new</span> <span>Oberver</span><span>(</span><span>)</span><span>;</span>
+<span>// 每来一个顾客就注册一个想执行的函数</span>
+wantCake<span>.</span><span>register</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span><span>'console.log("call daisy")'</span><span>}</span><span>)</span>
+wantCake<span>.</span><span>register</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span><span>'console.log("call anny")'</span><span>}</span><span>)</span>
+wantCake<span>.</span><span>register</span><span>(</span><span>(</span><span>)</span> <span>=></span> <span>{</span><span>'console.log("call sunny")'</span><span>}</span><span>)</span>
+
+<span>// 最后蛋糕做好之后，通知所有的客户</span>
+wantCake<span>.</span><span>notify</span><span>(</span><span>)</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br></div></div><h3 id="初始化"> <strong>初始化</strong></h3>
+<p>vue在初始化执行initState的时候，会对<code>props</code>、<code>methods</code>、<code>data</code>、<code>computed</code> 和 <code>wathcer</code> 等属性做初始化操作。</p>
+<div><pre><code><span>export</span> <span>function</span> <span>initState</span> <span>(</span><span><span>vm</span><span>:</span> Component</span><span>)</span> <span>{</span>
+  vm<span>.</span>_watchers <span>=</span> <span>[</span><span>]</span>
+  <span>const</span> opts <span>=</span> vm<span>.</span>$options
+  <span>if</span> <span>(</span>opts<span>.</span>props<span>)</span> <span>initProps</span><span>(</span>vm<span>,</span> opts<span>.</span>props<span>)</span>
+  <span>if</span> <span>(</span>opts<span>.</span>methods<span>)</span> <span>initMethods</span><span>(</span>vm<span>,</span> opts<span>.</span>methods<span>)</span>
+  <span>if</span> <span>(</span>opts<span>.</span>data<span>)</span> <span>{</span>
+    <span>initData</span><span>(</span>vm<span>)</span>
+  <span>}</span> <span>else</span> <span>{</span>
+    <span>observe</span><span>(</span>vm<span>.</span>_data <span>=</span> <span>{</span><span>}</span><span>,</span> <span>true</span> <span>/* asRootData */</span><span>)</span>
+  <span>}</span>
+  <span>if</span> <span>(</span>opts<span>.</span>computed<span>)</span> <span>initComputed</span><span>(</span>vm<span>,</span> opts<span>.</span>computed<span>)</span>
+  <span>if</span> <span>(</span>opts<span>.</span>watch <span>&amp;&amp;</span> opts<span>.</span>watch <span>!==</span> nativeWatch<span>)</span> <span>{</span>
+    <span>initWatch</span><span>(</span>vm<span>,</span> opts<span>.</span>watch<span>)</span>
+  <span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div></div><p>在初始化data的时候，一共做了两件事，一件是利用proxy将数据代理到整个vue实例上，另一件就是将data中的所有对象属性reactive化，变成响应式对象，为对象添加getter和setter。</p>
+<div><pre><code><span>/**
+ * Observer class that is attached to each observed
+ * object. Once attached, the observer converts the target
+ * object's property keys into getter/setters that
+ * collect dependencies and dispatch updates.
+ */</span>
+<span>export</span> <span>class</span> <span>Observer</span> <span>{</span>
+  <span>value</span><span>:</span> any<span>;</span>
+  <span>dep</span><span>:</span> Dep<span>;</span>
+  <span>vmCount</span><span>:</span> number<span>;</span> <span>// number of vms that has this object as root $data</span>
+
+  <span>constructor</span> <span>(</span><span><span>value</span><span>:</span> any</span><span>)</span> <span>{</span>
+    <span>this</span><span>.</span>value <span>=</span> value
+    <span>this</span><span>.</span>dep <span>=</span> <span>new</span> <span>Dep</span><span>(</span><span>)</span>
+    <span>this</span><span>.</span>vmCount <span>=</span> <span>0</span>
+    <span>def</span><span>(</span>value<span>,</span> <span>'__ob__'</span><span>,</span> <span>this</span><span>)</span>
+    <span>if</span> <span>(</span>Array<span>.</span><span>isArray</span><span>(</span>value<span>)</span><span>)</span> <span>{</span>
+      <span>const</span> augment <span>=</span> hasProto
+        <span>?</span> protoAugment
+        <span>:</span> copyAugment
+      <span>augment</span><span>(</span>value<span>,</span> arrayMethods<span>,</span> arrayKeys<span>)</span>
+      <span>this</span><span>.</span><span>observeArray</span><span>(</span>value<span>)</span>
+    <span>}</span> <span>else</span> <span>{</span>
+      <span>this</span><span>.</span><span>walk</span><span>(</span>value<span>)</span>
+    <span>}</span>
+  <span>}</span>
+
+  <span>/**
+   * Walk through each property and convert them into
+   * getter/setters. This method should only be called when
+   * value type is Object.
+   */</span>
+
+  <span>walk</span> <span>(</span><span><span>obj</span><span>:</span> Object</span><span>)</span> <span>{</span>
+    <span>const</span> keys <span>=</span> Object<span>.</span><span>keys</span><span>(</span>obj<span>)</span>
+    <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>;</span> i <span>&lt;</span> keys<span>.</span>length<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+      <span>defineReactive</span><span>(</span>obj<span>,</span> keys<span>[</span>i<span>]</span><span>)</span>
+    <span>}</span>
+  <span>}</span>
+
+  <span>/**
+   * Observe a list of Array items.
+   */</span>
+  <span>observeArray</span> <span>(</span><span><span>items</span><span>:</span> Array<span>&lt;</span>any<span>></span></span><span>)</span> <span>{</span>
+    <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>,</span> l <span>=</span> items<span>.</span>length<span>;</span> i <span>&lt;</span> l<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+      <span>observe</span><span>(</span>items<span>[</span>i<span>]</span><span>)</span>
+    <span>}</span>
+  <span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br><span>38</span><br><span>39</span><br><span>40</span><br><span>41</span><br><span>42</span><br><span>43</span><br><span>44</span><br><span>45</span><br><span>46</span><br><span>47</span><br><span>48</span><br><span>49</span><br></div></div><p>我们关注上面的这段代码，它将对象的所有属性进行遍历执行defineReactive()方法进行响应式化</p>
+<div><pre><code>  <span>walk</span> <span>(</span><span><span>obj</span><span>:</span> Object</span><span>)</span> <span>{</span>
+    <span>const</span> keys <span>=</span> Object<span>.</span><span>keys</span><span>(</span>obj<span>)</span>
+    <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>;</span> i <span>&lt;</span> keys<span>.</span>length<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+      <span>defineReactive</span><span>(</span>obj<span>,</span> keys<span>[</span>i<span>]</span><span>)</span>
+    <span>}</span>
+  <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div></div><p>在执行这个方法的过程中，会new一个dep实例，记得注意，后面会用到</p>
+<div><pre><code><span>function</span> <span>defineReactive</span><span>(</span><span><span>obj</span><span>:</span> Object<span>,</span> <span>key</span><span>:</span> string<span>,</span> <span>...</span></span><span>)</span> <span>{</span>
+    <span>const</span> dep <span>=</span> <span>new</span> <span>Dep</span><span>(</span><span>)</span>
+
+    Object<span>.</span><span>defineProperty</span><span>(</span>obj<span>,</span> key<span>,</span> <span>{</span>
+      <span>enumerable</span><span>:</span> <span>true</span><span>,</span>
+      <span>configurable</span><span>:</span> <span>true</span><span>,</span>
+      <span>get</span><span>:</span> <span>function</span> <span>reactiveGetter</span> <span>(</span><span>)</span> <span>{</span>
+        <span>...</span><span>.</span>
+        dep<span>.</span><span>depend</span><span>(</span><span>)</span>
+        <span>return</span> value
+        <span>...</span><span>.</span>
+      <span>}</span><span>,</span>
+      <span>set</span><span>:</span> <span>function</span> <span>reactiveSetter</span> <span>(</span><span>newVal</span><span>)</span> <span>{</span>
+        <span>...</span>
+        val <span>=</span> newVal
+        dep<span>.</span><span>notify</span><span>(</span><span>)</span>
+        <span>...</span>
+      <span>}</span>
+    <span>}</span><span>)</span>
+  <span>}</span>
+  
+  <span>class</span> <span>Dep</span> <span>{</span>
+      <span>static</span> <span>target</span><span>:</span> <span>?</span>Watcher<span>;</span>
+      <span>subs</span><span>:</span> Array<span>&lt;</span>Watcher<span>></span><span>;</span>
+
+      <span>depend</span> <span>(</span><span>)</span> <span>{</span>
+        <span>if</span> <span>(</span>Dep<span>.</span>target<span>)</span> <span>{</span>
+          Dep<span>.</span>target<span>.</span><span>addDep</span><span>(</span><span>this</span><span>)</span>
+        <span>}</span>
+      <span>}</span>
+
+      <span>notify</span> <span>(</span><span>)</span> <span>{</span>
+        <span>const</span> subs <span>=</span> <span>this</span><span>.</span>subs<span>.</span><span>slice</span><span>(</span><span>)</span>
+        <span>for</span> <span>(</span><span>let</span> i <span>=</span> <span>0</span><span>,</span> l <span>=</span> subs<span>.</span>length<span>;</span> i <span>&lt;</span> l<span>;</span> i<span>++</span><span>)</span> <span>{</span>
+          subs<span>[</span>i<span>]</span><span>.</span><span>update</span><span>(</span><span>)</span>
+        <span>}</span>
+      <span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br><span>36</span><br><span>37</span><br></div></div><p>上述代码中的Dep类就是一个观察者类，每个对象属性都一个dep实例对象，在执行get的时候进行触发depend方法，触发sit的时候执行notify方法。</p>
+<h3 id="mount阶段"> <strong>mount阶段</strong></h3>
+<p>在vue实例挂载阶段，会创建一个Watcher类的实例对象，这个Watcher实际上是连接Vue组件与Dep（也就是视图更新环节）的桥梁。</p>
+<div><pre><code><span>mountComponent</span><span>(</span><span><span>vm</span><span>:</span> Component<span>,</span> <span>el</span><span>:</span> <span>?</span>Element<span>,</span> <span>...</span></span><span>)</span> <span>{</span>
+    vm<span>.</span>$el <span>=</span> el
+
+    <span>...</span>
+
+    <span>updateComponent</span> <span>=</span> <span>(</span><span>)</span> <span>=></span> <span>{</span>
+      vm<span>.</span><span>_update</span><span>(</span>vm<span>.</span><span>_render</span><span>(</span><span>)</span><span>,</span> <span>...</span><span>)</span>
+    <span>}</span>
+
+    <span>new</span> <span>Watcher</span><span>(</span>vm<span>,</span> updateComponent<span>,</span> <span>...</span><span>)</span>
+    <span>...</span>
+<span>}</span>
+
+<span>class</span> <span>Watcher</span> <span>{</span>
+  <span>getter</span><span>:</span> Function<span>;</span>
+
+  <span>// 代码经过简化</span>
+  <span>constructor</span><span>(</span><span><span>vm</span><span>:</span> Component<span>,</span> <span>expOrFn</span><span>:</span> string <span>|</span> Function<span>,</span> <span>...</span></span><span>)</span> <span>{</span>
+    <span>...</span>
+    <span>this</span><span>.</span>getter <span>=</span> expOrFn
+    Dep<span>.</span>target <span>=</span> <span>this</span>                      <span>// 注意这里将当前的Watcher赋值给了Dep.target</span>
+    <span>this</span><span>.</span>value <span>=</span> <span>this</span><span>.</span><span>getter</span><span>.</span><span>call</span><span>(</span>vm<span>,</span> vm<span>)</span>  <span>// 调用组件的更新函数</span>
+    <span>...</span>
+  <span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div></div><p>在rende()方法将模板渲染成虚拟Vnode的过程中会访问data，从而触发属性的getter，然后每个对象属性又有一个dep实例对象（上面提到的），然后再getter的逻辑中又会调用该dep的depend方法，将watcher实例add到sub（存在Dep类中的存储watcher的数组）里面。在depend方法里面，Dep.target就是watcher本身，在Wacher类中的构造函数会执行（上面代码有）。以上过程就叫<strong>依赖收集</strong>。</p>
+<h3 id="派发更新"> <strong>派发更新</strong></h3>
+<p>在对象属性的数据改变之后，会触发sitter，从而执行sitter函数的逻辑，从而调用dep实例的notify方法，从而进行遍历调用sub中所有watcher的upadte方法进行视图更新。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210717221736565.png" alt="image-20210717221736565"></p>
+<h3 id="总结"> <strong>总结</strong></h3>
+<p>**第一步：**组件初始化的时候，先给每一个Data属性都注册getter，setter，也就是reactive化。然后再new 一个自己的Watcher对象，此时watcher会立即调用组件的render函数去生成虚拟DOM。在调用render的时候，就会需要用到data的属性值，此时会触发getter函数，将当前的Watcher函数注册进sub里。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210717225112267.png" alt="image-20210717225112267"></p>
+<p>**第二步：**当data属性发生改变之后，会触发sitter，遍历sub里所有的watcher对象，通知它们去重新渲染组件。</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210717225239671.png" alt="image-20210717225239671"></p>
+<p><strong>注意：vue对数组响应式是通过变异方法完成的，而且如果要对响应式对象添加新的属性，必须要用$set方法才能完成</strong></p>
+<p>参考文章：</p>
+<p><a href="https://ustbhuangyi.github.io/vue-analysis/v2/reactive/" target="_blank" rel="noopener noreferrer">vue技术揭秘<i>Content not supported</i></a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/88648401" target="_blank" rel="noopener noreferrer">最简化 VUE的响应式原理<i>Content not supported</i></a></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>js数组api</title>
+      <link>https://xiezhenghua123.github.io/blob/article/javascript/Array/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/javascript/Array/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">js数组api</source>
+      <category>javascript</category>
+      <pubDate>Fri, 02 Jul 2021 00:04:06 GMT</pubDate>
+      <content:encoded><![CDATA[<h3 id="创建数组"> 创建数组</h3>
+<div><pre><code><span>//使用构造函数创建</span>
+<span>let</span> array <span>=</span> <span>new</span> <span>Array</span><span>(</span><span>)</span><span>;</span>
+
+<span>//使用数组自变量创建</span>
+<span>let</span> array <span>=</span> <span>[</span><span>]</span><span>;</span>
+
+<span>//使用form函数创建,可将类数组转换为数组</span>
+<span>let</span> array <span>=</span> Array<span>.</span><span>from</span><span>(</span><span>"array"</span><span>)</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>)</span><span>;</span> <span>//['a','r','r','a','y']</span>
+
+<span>//使用of函数创建，可将一组参数转换为实例</span>
+<span>let</span> array <span>=</span> Array<span>.</span><span>of</span><span>(</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>)</span><span>;</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div></div><h3 id="数组空位"> 数组空位</h3>
+<p>使用数组字面量初始化数组时，可以使用一串逗号来创建空位，es6 新增的方法普遍将这些空位当成存在的元素，值为 undefind。由于行为不一致和存在性能隐患，因此实践中要尽量少用数组空位</p>
+<h3 id="数组索引"> 数组索引</h3>
+<p>数组属性 length，可读也可写</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>]</span><span>;</span>
+array<span>.</span>length <span>=</span> <span>2</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>[</span><span>2</span><span>]</span><span>)</span><span>;</span> <span>//undefined</span>
+
+<span>let</span> <span>{</span> length <span>}</span> <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>length<span>)</span><span>;</span> <span>//3</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div></div><h3 id="检测数组"> 检测数组</h3>
+<div><pre><code><span>//利用instanceof，局限性：只有一个全局上下文时才能使用</span>
+<span>let</span> array <span>=</span> <span>[</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array <span>instanceof</span> <span>Array</span><span>)</span><span>;</span> <span>//true</span>
+
+<span>//利用isArray方法</span>
+console<span>.</span><span>log</span><span>(</span>Array<span>.</span><span>isArray</span><span>(</span>array<span>)</span><span>)</span><span>;</span> <span>//true</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div></div><h3 id="迭代器方法"> 迭代器方法</h3>
+<p>在 es6 中，Array 的原型上暴露了 3 各用于检测数组内容的方法：keys()，values()，entries()</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>]</span><span>;</span>
+
+<span>//keys方法返回数组索引的迭代器</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>keys</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//[0,1,2]</span>
+
+<span>//values方法返回数组元素的迭代器</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>values</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//['a','b','c']</span>
+
+<span>//entries方法方法返回键值对</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>entries</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//[[0,'a'],[1,'b'],[2,'c']]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br></div></div><h3 id="复制和填充方法"> 复制和填充方法</h3>
+<p>fill()和 copyWithin()方法用于填充数组，都不会改变原数组的大小，但是会改变原数组</p>
+<table>
+<thead>
+<tr>
+<th>方法\参数</th>
+<th>value</th>
+<th>start</th>
+<th>end</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fill()</td>
+<td>填充值，必选</td>
+<td>插入开始位置，可选</td>
+<td>插入结束位置（默认 length，不包括本身），负数从末尾开始</td>
+</tr>
+<tr>
+<td>copyWithin()</td>
+<td>复制到指定目标索引开始位置，必选</td>
+<td>元素复制的起始位置，可选</td>
+<td>停止复制的索引位置（默认 length，不复制此位置的值），负数从末尾开始</td>
+</tr>
+</tbody>
+</table>
+<p>同：① 都会静默忽略超出数组边界、零长度以及方向相反的索引范围，意思就是这些情况的索引范围不会执行</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>0</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span><span>;</span>
+
+<span>//fill()</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>fill</span><span>(</span><span>9</span><span>,</span> <span>2</span><span>,</span> <span>4</span><span>)</span><span>)</span><span>;</span> <span>//[0,1,9,9,4,5]</span>
+
+<span>//copyWithin()</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>copyWithin</span><span>(</span><span>2</span><span>,</span> <span>0</span><span>,</span> <span>3</span><span>)</span><span>)</span><span>;</span> <span>//[0,1,0,1,2,5]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div></div><h3 id="转换方法"> 转换方法</h3>
+<p>数组转字符串：toString()和 toLocaleString()</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>toString</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//a,1,2,3,4,5</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>toLocaleString</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//a,1,2,3,4,5</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><p>返回原始值：valueOf()</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>valueOf</span><span>(</span><span>)</span><span>)</span><span>;</span> <span>//['a', 1, 2, 3, 4, 5]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>join()方法：可以返回用任意分隔符隔开的字符串</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>join</span><span>(</span><span>"||"</span><span>)</span><span>)</span><span>;</span> <span>//a||1||2||3||4||5</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>以上方法都不改变原始数组</p>
+<h3 id="栈方法"> 栈方法</h3>
+<p>推入方法：push() ，在数组末尾插入任意数量的元素，返回新的数组长度</p>
+<p>弹出方法：pop()，删除数组最后一个元素，返回弹出的数组元素</p>
+<h3 id="队列方法"> 队列方法</h3>
+<p>shift()方法：输出数组的第一个元素，并返回该元素</p>
+<p>push()方法：在数组末尾插入任意数量的元素，返回新的数组长度</p>
+<p>unshift()方法：在数组头部插入任意数量的元素，并返回新的数组长度</p>
+<p>pop()方法：删除数组最后一个元素，返回弹出的数组元素</p>
+<h3 id="排序方法"> 排序方法</h3>
+<p>reverse()：把数组元素反向排序，返回排序后的数组</p>
+<p>sort()：默认将元素升序排序，返回排序后的数组。接受一个比较函数，比较函数接收两个参数，如果第一个承诺书应该排在第二个参数前面，就返回负值；如果两个参数相等，就返回 0；如果第一个参数应该排在第二个参数后面，就返回正值</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>3</span><span>,</span> <span>5</span><span>,</span> <span>9</span><span>,</span> <span>6</span><span>,</span> <span>2</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>
+  array<span>.</span><span>sort</span><span>(</span><span>(</span><span>a<span>,</span> b</span><span>)</span> <span>=></span> <span>{</span>
+    <span>return</span> a <span>-</span> b<span>;</span>
+  <span>}</span><span>)</span>
+<span>)</span><span>;</span> <span>//[2,3,5,6,9] 升序排序</span>
+
+console<span>.</span><span>log</span><span>(</span>
+  array<span>.</span><span>sort</span><span>(</span><span>(</span><span>a<span>,</span> b</span><span>)</span> <span>=></span> <span>{</span>
+    <span>return</span> b <span>-</span> a<span>;</span>
+  <span>}</span><span>)</span>
+<span>)</span><span>;</span> <span>//[9,6,5,3,2] 降序排序</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div></div><p>以上方法改变原数组，返回调用他们数组的引用</p>
+<h3 id="操作方法"> 操作方法</h3>
+<p>连接数组：concat()</p>
+<div><pre><code><span>//普通连接</span>
+<span>let</span> array1 <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array1<span>.</span><span>concat</span><span>(</span><span>"d"</span><span>,</span> <span>"e"</span><span>)</span><span>)</span><span>;</span> <span>//[ 'a', 'b', 'c', 'd', 'e' ]</span>
+
+<span>//嵌套数组连接</span>
+<span>let</span> array2 <span>=</span> <span>[</span><span>"d"</span><span>,</span> <span>"e"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array1<span>.</span><span>concat</span><span>(</span>array2<span>)</span><span>)</span><span>;</span> <span>//[ 'a', 'b', 'c', 'd', 'e' ]</span>
+
+<span>//重写打平数组参数的行为</span>
+array2<span>[</span>Symbol<span>.</span>isConcatSpreadable<span>]</span> <span>=</span> <span>false</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array1<span>.</span><span>concat</span><span>(</span>array2<span>)</span><span>)</span><span>;</span>
+<span>//['a','b','c',['d','e'[Symbol(Symbol.isConcatSpreadable)]: false ]]</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div></div><p>截取数组：slice(start,end)，返回截取后的新数组（不包含结束索引对应的元素），不影响原数组</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>,</span> <span>"d"</span><span>,</span> <span>"e"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>slice</span><span>(</span><span>2</span><span>,</span> <span>4</span><span>)</span><span>)</span><span>;</span> <span>//['c','d']</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div><div><span>1</span><br><span>2</span><br></div></div><p>splice()方法</p>
+<p>参数：index。必须，整数，规定添加/删除项目的位置，使用负数可从数组结尾处规定位置。</p>
+<p>howmany。必需。要删除的项目数量。如果设置为 0，则不会删除项目。</p>
+<p>item1...itemN。可选，向数组添加新的项目</p>
+<p>功能：</p>
+<p>① 删除任意位置的数组元素，返回删除后的数组元素</p>
+<div><pre><code><span>//删除两个元素</span>
+<span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>,</span> <span>"d"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>splice</span><span>(</span><span>1</span><span>,</span> <span>2</span><span>)</span><span>)</span><span>;</span> <span>//['b','c']</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><p>② 插入元素，返回空数组，改变原数组</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>,</span> <span>"d"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>splice</span><span>(</span><span>2</span><span>,</span> <span>0</span><span>,</span> <span>"1"</span><span>,</span> <span>"2"</span><span>)</span><span>)</span><span>;</span> <span>//[]</span>
+console<span>.</span><span>log</span><span>(</span>array<span>)</span><span>;</span> <span>//['a','b','c','1','2','d']</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><p>③ 替换数组元素。</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>,</span> <span>"d"</span><span>]</span><span>;</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>splice</span><span>(</span><span>1</span><span>,</span> <span>1</span><span>,</span> <span>"g"</span><span>,</span> <span>"h"</span><span>)</span><span>)</span><span>;</span> <span>//['b']</span>
+console<span>.</span><span>log</span><span>(</span>array<span>)</span><span>;</span> <span>//['a','g','h','c','d']</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><h3 id="搜索和位置方法"> 搜索和位置方法</h3>
+<p>1、严格相等 '==='</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>"a"</span><span>,</span> <span>"b"</span><span>,</span> <span>"c"</span><span>,</span> <span>"d"</span><span>]</span><span>;</span>
+
+<span>//indexOf(value,start)方法，从数组第一项开始匹配，找到元素就返回索引，找不到就返回-1</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>indexOf</span><span>(</span><span>"b"</span><span>)</span><span>)</span><span>;</span> <span>//1</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>indexOf</span><span>(</span><span>"h"</span><span>)</span><span>)</span><span>;</span> <span>//-1</span>
+
+<span>//lastIndexOf(value,start)方法，从数组末尾第一项开始匹配，找到元素就返回索引，找不到就返回-1</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>indexOf</span><span>(</span><span>"b"</span><span>)</span><span>)</span><span>;</span> <span>//1</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>indexOf</span><span>(</span><span>"h"</span><span>)</span><span>)</span><span>;</span> <span>//-1</span>
+
+<span>//includes(value,start),从数组第一项开始匹配，找到元素返回true，找不到返回false</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>includes</span><span>(</span><span>"m"</span><span>)</span><span>)</span><span>;</span> <span>//false</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br></div></div><p>2、断言函数</p>
+<p>断言函数接收三个参数：元素、索引和数组本身</p>
+<div><pre><code><span>const</span> people <span>=</span> <span>[</span>
+  <span>{</span>
+    <span>name</span><span>:</span> <span>"mmm"</span><span>,</span>
+    <span>age</span><span>:</span> <span>27</span><span>,</span>
+  <span>}</span><span>,</span>
+  <span>{</span>
+    <span>name</span><span>:</span> <span>"bb"</span><span>,</span>
+    <span>age</span><span>:</span> <span>29</span><span>,</span>
+  <span>}</span><span>,</span>
+<span>]</span><span>;</span>
+
+<span>//find(),返回第一个匹配的元素</span>
+console<span>.</span><span>log</span><span>(</span>people<span>.</span><span>find</span><span>(</span><span>(</span><span>e<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> e<span>.</span>age <span>&lt;</span> <span>28</span><span>)</span><span>)</span><span>;</span> <span>//{ name: 'mmm', age: 27 }</span>
+
+<span>//findIndex()，返回第一个匹配的元素</span>
+console<span>.</span><span>log</span><span>(</span>people<span>.</span><span>find</span><span>(</span><span>(</span><span>e<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> e<span>.</span>age <span>&lt;</span> <span>28</span><span>)</span><span>)</span><span>;</span> <span>//0</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br></div></div><h3 id="迭代方法"> 迭代方法</h3>
+<p>每个方法接收两个参数：以每一项为参数运行的函数，以及可选的作为函数运行上下文的作用域对象。喊出接收三个参数：数组元素，数组索引、数组本身</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>]</span><span>;</span>
+
+<span>//every()方法：对数组的每一项都运行传入的函数，如果每一项都返回true，则这个方法返回true</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>every</span><span>(</span><span>(</span><span>item<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> item <span>></span> <span>0</span><span>)</span><span>)</span><span>;</span> <span>//true</span>
+
+<span>//filter():对数组的每一项都运行传入的函数，函数返回true的项目会组成新的数组返回</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>filter</span><span>(</span><span>(</span><span>item<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> item <span>></span> <span>2</span><span>)</span><span>)</span><span>;</span> <span>//[ 3, 4, 5, 6, 7 ]</span>
+
+<span>//forEach():对数组的每一项都执行传入的函数，没有返回值，相当于for循环</span>
+array<span>.</span><span>forEach</span><span>(</span><span>(</span><span>item<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> console<span>.</span><span>log</span><span>(</span>item<span>)</span><span>)</span><span>;</span>
+<span>/*
+1
+2
+3
+4
+5
+6
+7
+*/</span>
+
+<span>//map:对数组每一项都执行传入的函数，返回有每次函数调用的结果构成的数组</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>map</span><span>(</span><span>(</span><span>item<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> item <span>*</span> <span>2</span><span>)</span><span>)</span><span>;</span> <span>//[2,  4,  6, 8,10, 12, 14]</span>
+
+<span>/*some():对数组的每一项都执行传入的函数，如果有一项返回true，则该方法返回true，反之返回false，可以和every方法比较*/</span>
+console<span>.</span><span>log</span><span>(</span>array<span>.</span><span>some</span><span>(</span><span>(</span><span>item<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> item <span>></span> <span>8</span><span>)</span><span>)</span><span>;</span> <span>//false</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br></div></div><h3 id="归并方法"> 归并方法</h3>
+<p>reduce()和 reduceRight()：这两个方法都迭代数组的所有项，并在此基础上构建一个最终的返回值，reduce 方法从第一项遍历到最后一项，reduceRight 从最后一项遍历到第一项</p>
+<p>这两个方法都接受两个参数，对每一项都会运行的归并函数，以及归并起点的初始值（可选）</p>
+<p>传入函数的参数有四个：上一个归并值，当前值，当前值的索引，数组本身。这个函数返回的任何值都会作为下一次调用同一个函数的第一个参数，如果没有传入归并起点初始值，则第一次迭代从数组的第二项开始，所以传入归并函数的第一个参数是数组的第一项，第二个参数是数组的第二项</p>
+<div><pre><code><span>let</span> array <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span><span>;</span>
+
+<span>//reduce()</span>
+console<span>.</span><span>log</span><span>(</span>
+  array<span>.</span><span>reduce</span><span>(</span><span>(</span><span>pre<span>,</span> cur<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> <span>{</span>
+    <span>return</span> pre <span>+</span> cur<span>;</span>
+  <span>}</span><span>,</span> <span>10</span><span>)</span>
+<span>)</span><span>;</span> <span>//运行过程：10+1+2+3+4+5 最终结果：25</span>
+
+<span>//reduceRight()</span>
+console<span>.</span><span>log</span><span>(</span>
+  array<span>.</span><span>reduceRight</span><span>(</span><span>(</span><span>pre<span>,</span> cur<span>,</span> index<span>,</span> array</span><span>)</span> <span>=></span> <span>{</span>
+    <span>return</span> pre <span>+</span> cur<span>;</span>
+  <span>}</span><span>,</span> <span>10</span><span>)</span>
+<span>)</span><span>;</span> <span>//运行过程：10+5+4+3+2+1 最终结果：25</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div></div><p>第一次写博客文章，写的不好，大家见谅！</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>vuepress 搭配 vuepress-theme-hope 主题搭建个人博客经历</title>
+      <link>https://xiezhenghua123.github.io/blob/article/vuepress/firstStudy/</link>
+      <guid>https://xiezhenghua123.github.io/blob/article/vuepress/firstStudy/</guid>
+      <source url="https://xiezhenghua123.github.io/blob/rss.xml">vuepress 搭配 vuepress-theme-hope 主题搭建个人博客经历</source>
+      <category>vuepress</category>
+      <pubDate>Sun, 27 Jun 2021 15:46:23 GMT</pubDate>
+      <content:encoded><![CDATA[<h4 id="初始化-vuepress"> 初始化 vuepress</h4>
+<div><pre><code><span>mkdir</span> yourBlogName <span>&amp;&amp;</span> <span>cd</span> yourBlogName <span>#创建一个文件夹并进入，也可以直接在创建用vscode打开该文件夹</span>
+<span>npm</span> init <span>#用npm初始化，也可以用其他的</span>
+<span>npm</span> <span>install</span> vuepress -D <span>#安装vuepress</span>
+<span>npm</span> <span>install</span> vuepress-theme-hope -D <span>#安装vuepress-theme-hope主题</span>
+<span>npm</span> <span>install</span> <span>#最好npm install一下，防止包丢失</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div></div><h4 id="修改-package-json-文件"> 修改 package.json 文件</h4>
+<p>添加以下代码</p>
+<div><pre><code><span>"scripts"</span><span>:</span> <span>{</span>
+    <span>"dev"</span><span>:</span> <span>"vuepress dev docs"</span><span>,</span>
+    <span>"build"</span><span>:</span> <span>"vuepress build docs"</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div></div><h4 id="第一篇文章"> 第一篇文章</h4>
+<p>1、在根目录下新建 docs 文件夹</p>
+<p>2、在 docs 文件夹下面新建 readme.md 文件（这是作为首页）</p>
+<p><a href="https://vuepress-theme-hope.github.io/zh/guide/layout/home/#home" target="_blank" rel="noopener noreferrer">首页配置参照<i>Content not supported</i></a></p>
+<h4 id="vuepress-theme-hope-主题配置"> vuepress-theme-hope 主题配置</h4>
+<p>1、在 docs 文件夹下新建.vuepress 文件夹</p>
+<p>2、在.vuepress 文件夹下新建 config.js 文件</p>
+<p>具体内容：</p>
+<div><pre><code><span>const</span> <span>{</span> config <span>}</span> <span>=</span> <span>require</span><span>(</span><span>"vuepress-theme-hope"</span><span>)</span>
+
+module<span>.</span>exports <span>=</span> <span>config</span><span>(</span><span>{</span>
+  <span>// your config here</span>
+<span>}</span><span>)</span>
+#必须要按照以上写法，不能使用vuepress官方文档的写法
+#具体配置项参照：https<span>:</span><span>/</span><span>/</span>vuepress<span>-</span>theme<span>-</span>hope<span>.</span>github<span>.</span>io<span>/</span>zh<span>/</span>config<span>/</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div></div><h4 id="打包"> 打包</h4>
+<p>1、运行npm run build</p>
+<p>2、由于我在配置文件中设置的是 dest: 'public', 所以打包完成后根目录会出现一个public文件夹，里面是打包后的内容，点开index.html文件会出现样式丢失，这个不用管，因为用的是相对路径，所以只有上线部署后才会有样式。</p>
+<h4 id="部署"> 部署</h4>
+<p>我是部署到github上的，由于我不是第一次部署，所以仓库名已经被占用了，我用的是另一个仓库</p>
+<p><a href="https://vuepress.vuejs.org/zh/guide/deploy.html#github-pages" target="_blank" rel="noopener noreferrer">具体看官网文档<i>Content not supported</i></a></p>
+<p>但我想在我的github博客仓库中设立两个分支，一个分支存放我博客的所有内容，一个分支存放打包后的页面</p>
+<p>思路：主分支master存放打包后的页面，另一个分支存放我博客的所有内容</p>
+<p>在根目录下新建一个deploy.sh文件</p>
+<p>内容</p>
+<div><pre><code><span>#!/usr/bin/env sh</span>
+
+<span># 确保脚本抛出遇到的错误</span>
+<span>set</span> -e
+
+<span># 生成静态文件</span>
+<span>npm</span> run build
+
+<span># 进入生成的文件夹</span>
+<span>cd</span> public
+<span># 如果是发布到自定义域名</span>
+<span># echo 'www.example.com' > CNAME</span>
+
+<span>git</span> init
+<span>git</span> <span>add</span> *
+<span>git</span> commit -m <span>'发布'</span>
+
+<span># 如果发布到 https://&lt;USERNAME>.github.io</span>
+<span># git push -f git@github.com:&lt;USERNAME>/&lt;USERNAME>.github.io.git master</span>
+
+<span># 如果发布到 https://&lt;USERNAME>.github.io/&lt;REPO></span>
+<span>git</span> push -f git@github.com:xiezhenghua123/blob.git master <span>#这是我的仓库名</span>
+
+<span>cd</span> -
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br></div></div><p>注意：这个文件必须用git打开才能正常运行</p>
+<p>写好文章后运行这个文件，命令：./deploy.sh</p>
+<p>运行过程中，项目会自动打包，然后上传到github博客仓库中的master分支</p>
+<p>github上需要操作的步骤：</p>
+<p><img src="./../../.vuepress/public/screenshot/image-20210627132848159.png" alt=""></p>
+<p>完成以上步骤，博客就能访问了。</p>
+<p>为了防止本地仓库丢失，我们需要把整个博客文件上传到github仓库上的public（名字自己定）分支</p>
+<div><pre><code><span>git</span> checkout -b public <span>#本地新建一个public分支</span>
+<span>git</span> <span>add</span> *
+<span>git</span> commit -m <span>'xxx'</span>
+<span>git</span> push -f --set-upstream origin public
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br></div></div><h4 id="写好文章后发布的完整步骤"> 写好文章后发布的完整步骤</h4>
+<div><pre><code>./deploy.sh 
+<span>git</span> checkout -b public <span>#本地新建一个public分支,只需要运行一次进行，以后不要切换分支</span>
+<span>git</span> <span>add</span> *
+<span>git</span> commit -m <span>'xxx'</span>
+<span>git</span> push -f --set-upstream origin public <span>#运行之后，以后就只要git push就行</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div><div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div></div>]]></content:encoded>
+    </item>
+  </channel>
+</rss>
